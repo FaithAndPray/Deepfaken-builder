@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfaken Builder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00f0ff;
+            --secondary: #4ade80;
+            --bg-dark: #080a0f;
+            --glass-bg: rgba(15, 20, 25, 0.65);
+            --text-main: #f0f0f0;
+            --text-muted: #999;
+            --danger: #ff4757;
+            --corrupted: #b33939;
+            --corrupted-glow: #e056fd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+    font-family: 'Outfit', sans-serif;
+    background: url('background.png') center/cover no-repeat, #080a0f;
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+}
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        input, textarea, select {
+            background: rgba(0, 0, 0, 0.619);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            
+            width: 100%;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+        }
+
+        button {
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            border: none;
+            outline: none;
+            
+        }
+
+        /* Layout */
+        #main-view {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: transparent; 
+}
+        
+        .main-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            pointer-events: none;
+        }
+
+#left-menu-wrapper {
+    position: absolute;
+    left: 0; 
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    z-index: 10;
+}
+
+#main-icons-group {
+    position: relative;
+    display: flex;
+}
+
+#combined-icons {
+    height: 540px; 
+    width: auto;
+    display: block;
+}
+
+#click-areas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 250px; 
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.click-area {
+    flex: 1; 
+    display: flex;
+    align-items: center;
+    padding-left: 160px; 
+    cursor: pointer;
+}
+
+.db-btn-bottom {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-left: 10px;
+    cursor: pointer;
+}
+
+.db-btn-bottom img {
+    width: 50px; height: 50px; object-fit: contain;
+}
+
+.click-area span, .db-btn-bottom span {
+    color: #ffffff;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: transform 0.1s;
+}
+
+.click-area:active span, .db-btn-bottom:active span {
+    transform: scale(0.92);
+}
+
+.menu-item:active { transform: scale(0.95); }
+.menu-item img {
+    width: 150px; 
+    height: auto; 
+    border-radius: 0; 
+    object-fit: contain;
+}
+
+
+    
+
+
+#sidebar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 550px;
+    height: 100%;
+    margin: 0;
+    border-radius: 0; 
+    border-left: 4px solid #111; 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 10;
+    box-sizing: border-box;
+}
+#build-name-input { font-size: 1.4rem; padding: 5px; }
+.slot-image { width: 36px; height: 36px; }
+.slot-text { font-size: 0.9rem; }
+#sidebar-slots-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: min-content;
+    gap: 10px;
+    flex: 1; 
+    min-height: 0;
+    overflow-y: auto; 
+    padding-right: 5px;
+    padding-bottom: 15px;
+    overflow-x: hidden;
+}
+
+
+.build-slot, .mantra-slot, .sidebar-stats, .action-btn {
+    border-radius: 0 !important;
+}
+#slot-kit { grid-column: 1; grid-row: 1; }
+#slot-oath { grid-column: 2; grid-row: 1; }
+#slot-weapon { grid-column: 1; grid-row: 2; }
+#slot-bell { grid-column: 2; grid-row: 2; }
+#slot-mantras { grid-column: 1; grid-row: 3; }
+#slot-enchant { grid-column: 2; grid-row: 3; }
+#slot-notes { grid-column: 1 / -1; grid-row: 4; }
+.sidebar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    width: 100%;
+    gap: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 15px;
+    margin-top: auto;
+}
+
+        #build-name-input {
+            width: 100%;
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--glass-border);
+            border-radius: 0;
+            padding: 10px;
+            margin-bottom: 10px;
+            color: white;
+        }
+        #build-name-input:focus { border-bottom-color: var(--primary); box-shadow: none; }
+
+        .build-slot {
+            background: rgb(0, 0, 0);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            
+            min-height: 85px;
+        }
+
+        .slot-info { display: flex; flex-direction: column; flex: 1; justify-content: center; }
+        .slot-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .slot-content { display: flex; align-items: center; gap: 15px; width: 100%; }
+        .slot-image {
+            width: 48px; height: 48px;
+            border-radius: 8px;
+            background: #111;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .slot-text { font-weight: 600; font-size: 1.1rem; color: white; }
+        .slot-empty { color: #555; font-style: italic; font-weight: normal; font-size: 1rem; }
+
+        .corrupted-text { color: var(--corrupted-glow); text-shadow: 0 0 10px rgba(224, 86, 253, 0.6); }
+
+        .mantra-list { display: flex; flex-direction: column; gap: 10px; }
+        .mantra-slot {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .mantra-slot img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+        
+        .gem-badge {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            color: var(--primary);
+            margin-left: auto;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .auto-mantra {
+            border-color: rgba(255, 215, 0, 0.4);
+            background: rgba(255, 215, 0, 0.05);
+            cursor: default;
+        }
+        .auto-badge { color: gold; font-size: 0.7rem; margin-left: auto; text-transform: uppercase; font-weight: bold; text-shadow: 0 0 5px rgba(255,215,0,0.5); }
+
+        .sidebar-actions {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+.action-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid transparent;
+    font-size: 1rem;
+    cursor: pointer;
+}
+        .btn-share { background: rgb(74, 222, 128); color: #035c23; border-color: rgba(74, 222, 128, 0.3); }
+        
+        .btn-evil { 
+            background: rgb(255, 71, 86); 
+            color: #7c040e; 
+            border-color: rgba(255, 71, 87, 0.3); 
+        }
+        .btn-clear {
+    grid-column: 1 / -1; 
+}
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+        .modal-container {
+            width: 85%; height: 85%;
+            border-radius: 24px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .modal-overlay.active .modal-container { transform: scale(1); }
+
+        .modal-header {
+            padding: 25px 35px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.4);
+        }
+        .modal-header h2 { font-size: 1.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
+        .modal-close {
+            background: transparent; color: rgba(255,255,255,0.5); font-size: 2rem; line-height: 1;
+        }
+        .modal-body-split { display: flex; flex: 1; overflow: hidden; background: rgba(10,12,15,0.8); }
+        .modal-left {
+            flex: 2; padding: 25px; border-right: 1px solid var(--glass-border);
+            display: flex; flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+        .modal-right {
+            flex: 1; padding: 35px; background: rgba(5,7,10,0.9);
+            overflow-y: auto;
+        }
+
+        .search-bar-container { position: sticky; top: 0; padding-bottom: 15px; z-index: 2; margin-bottom: 10px; }
+        .search-bar { width: 100%; font-size: 1.1rem; padding: 15px 20px; border-radius: 12px; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px; }
+        .tab-btn {
+            background: rgba(0, 0, 0, 0.493); padding: 10px 20px; border-radius: 20px; color: #ccc; border: 1px solid transparent;
+            white-space: nowrap; font-weight: 600; font-size: 0.9rem; letter-spacing: 1px;
+        }
+        .tab-btn.active { background: rgba(0,240,255,0.15); color: var(--primary); border-color: rgba(0,240,255,0.5); box-shadow: 0 0 10px rgba(0,240,255,0.2); }
+
+        .item-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 18px;
+        }
+        .item-card {
+            background: rgba(0,0,0,0.4);
+            border-radius: 6px; padding: 15px; text-align: center; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .item-card img { width: 70px; height: 70px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); }
+    .item-card .name { 
+    font-size: 1rem; 
+    font-weight: 600; 
+    color: #ddd; 
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+    display: block;
+    width: 100%;
+    }
+        .bell-hint { font-size: 0.7rem; color: #888; margin-top: 8px; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 8px; }
+
+        /* Item Details Pane */
+        .detail-img { width: 120px; height: 120px; border-radius: 16px; object-fit: cover; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        .detail-name { font-size: 2rem; font-weight: 800; margin-bottom: 15px; color: wheat; text-transform: uppercase; letter-spacing: 1px; }
+        .detail-desc { color: #bbb; line-height: 1.7; margin-bottom: 25px; white-space: pre-wrap; font-size: 1.05rem; }
+        .detail-extra-imgs { display: flex; flex-direction: column; gap: 15px; }
+        .detail-extra-imgs img { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+
+        /* Context Menu */
+        #context-menu {
+            position: fixed; background: rgba(15, 20, 25, 0.95); border: 1px solid rgba(0,240,255,0.3);
+            border-radius: 12px; padding: 8px; z-index: 1000; display: none; min-width: 180px;
+             backdrop-filter: blur(10px);
+        }
+        .ctx-item { padding: 12px 18px; cursor: pointer; border-radius: 8px; color: #eee; font-size: 0.95rem; font-weight: 600; transition: 0.2s; }
+        .ctx-danger { color: var(--danger); }
+
+        /* DB specific */
+        .db-modal-content { max-width: 900px; margin: 0 auto; width: 90%; height: 85%; display: flex; flex-direction: column; }
+        .db-header { padding: 25px 35px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); }
+        .db-body { padding: 30px; overflow-y: auto; flex: 1; }
+        
+        .db-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .db-row { display: flex; align-items: center; background: rgba(0,0,0,0.4); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .db-row img { width: 40px; height: 40px; border-radius: 8px; margin-right: 15px; object-fit: cover; }
+        .db-row-name { flex: 1; font-weight: 600; font-size: 1.1rem; }
+        .db-row-cat { color: #888; font-size: 0.8rem; margin-right: 20px; text-transform: uppercase; }
+        .db-actions button { padding: 8px 16px; margin-left: 8px; border-radius: 8px; color: white; font-weight: bold; }
+        .btn-edit { background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.5); color: #60a5fa; }
+        .btn-del { background: rgba(225, 29, 72, 0.2); border: 1px solid rgba(225, 29, 72, 0.5); color: #fb7185; }
+        
+        .db-form { display: flex; flex-direction: column; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group label { color: #bbb; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .form-actions { display: flex; gap: 15px; margin-top: 20px; }
+        .btn-primary { background: var(--primary); color: #000; padding: 15px 30px; border-radius: 12px; font-weight: 800; text-transform: uppercase; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; padding: 15px 30px; border-radius: 12px; font-weight: 800; }
+        
+        #db-add-btn { width: 100%; margin-top: 20px; background: rgba(0,240,255,0.1); color: var(--primary); border: 1px dashed var(--primary); padding: 15px; border-radius: 12px; font-weight: bold; font-size: 1.1rem; }
+
+
+        .hidden { display: none !important; }
+#menu-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    height: 85%;
+    border: 8px solid #111; 
+    background: url('meaubg.png') center/cover no-repeat, #151515; 
+    z-index: 10;
+    overflow: hidden; 
+}
+@keyframes fadeInSlideUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#start-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #222, #050505);
+    z-index: 9999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer;
+    transition: opacity 0.5s ease-out; 
+}
+
+#start-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#start-screen img { 
+    max-width: 60%; height: auto; 
+    opacity: 0;
+    animation: fadeInSlideUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
+}
+.start-text { 
+    margin-top: 20px; font-size: 1.5rem; color: #ffd700; 
+    text-transform: uppercase; letter-spacing: 3px; font-weight: 300; 
+    opacity: 0;
+    animation: fadeInSlideUp 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
+    animation-delay: 0.3s;
+}
+.selection-container {
+    border-radius: 0 !important; 
+    position: relative;
+    border: 4px solid #111;
+}
+
+.abs-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    z-index: 101;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 2.5rem;
+    cursor: pointer;
+    text-shadow: 0 2px 4px #000;
+    transition: color 0.2s;
+}
+
+.abs-close:hover {
+    color: var(--danger);
+}
+
+.modal-body-split.sharp-edges {
+    border-radius: 0;
+    backdrop-filter: blur(12px); 
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.modal-right.slim-right {
+    flex: 0 0 400px !important; 
+    background: rgba(5, 7, 10, 0.7); 
+    border-left: 2px solid #111;
+}
+.sidebar-bottom {
+    display: flex;
+    flex-direction: row; 
+    width: 100%;
+    gap: 15px;
+    flex-shrink: 0; 
+    margin-top: 15px;
+    padding-top: 15px;
+    min-height: max-content;
+
+    align-self: end;
+}
+
+.sidebar-buttons {
+    flex: 1; 
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: -30px;
+}
+.sidebar-stats {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0 !important;
+    border-radius: 14px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: 8px;
+}
+.sidebar-stats {
+    width: 100%;
+    min-height: 100%;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-row span:last-child {
+    color: white;
+    font-weight: 800;
+}
+    </style>
+</head>
+<body>
+    <div id="start-screen" onclick="hideStartScreen()">
+    <img src="Deepfaken.png" alt="Deepfaken">
+    <div class="start-text">
+        <center>  - click to start -  </center>
+        <br>
+        dont zoom in the website to not break shit
+    </div>
+</div>
+
+    <!-- Main Application View -->
+    <div id="menu-container">
+    <!-- Left Menu -->
+   <div id="left-menu-wrapper">
+    <!-- Combined Icons Image -->
+    <div id="main-icons-group">
+        <img src="all-meau.png" id="combined-icons" alt="Menu Icons">
+        
+        <!-- Invisible Click Areas mapped perfectly to 5 slices -->
+        <div id="click-areas">
+            <!-- Order requested: Mantras, Bells, Weapons, Oaths, Kits -->
+            <div class="click-area" onclick="openSelectionModal('mantras')"><span>Mantra</span></div>
+            <div class="click-area" onclick="openSelectionModal('bells')"><span>Bell</span></div>
+            <div class="click-area" onclick="openSelectionModal('weapons', 'heavy')"><span>Weapon</span></div>
+            <div class="click-area" onclick="openSelectionModal('oaths')"><span>Oath</span></div>
+            <div class="click-area" onclick="openSelectionModal('kits')"><span>Kit</span></div>
+        </div>
+    </div>
+        <div class="menu-item" onclick="openDB()">
+            <img src="database-icon.png" alt="Database"> <span></span>
+        </div>
+    </div>
+
+
+    <div id="sidebar">
+    <input type="text" id="build-name-input" placeholder="Build Name Here" value="New Build" onchange="updateBuildName(this.value)">
+    
+    <div id="sidebar-slots-wrapper">
+        <div class="build-slot" id="slot-kit" onclick="openSelectionModal('kits')">
+            <div class="slot-info">
+                <div class="slot-label">Kit</div>
+                <div class="slot-content" id="sidebar-kit"><div class="slot-empty">Empty</div></div>
+            </div>
+        </div>
+        <div class="build-slot" id="slot-oath" onclick="openSelectionModal('oaths')">
+            <div class="slot-info">
+                <div class="slot-label">Oath</div>
+                <div class="slot-content" id="sidebar-oath"><div class="slot-empty">Empty</div></div>
+            </div>
+        </div>
+        <div class="build-slot" id="slot-weapon" onclick="openSelectionModal('weapons', 'heavy')">
+            <div class="slot-info">
+                <div class="slot-label">Weapon</div>
+                <div class="slot-content" id="sidebar-weapon"><div class="slot-empty">Empty</div></div>
+            </div>
+        </div>
+        <div class="build-slot" id="slot-bell" onclick="openSelectionModal('bells')">
+            <div class="slot-info">
+                <div class="slot-label">Bell</div>
+                <div class="slot-content" id="sidebar-bell"><div class="slot-empty">Empty</div></div>
+            </div>
+        </div>
+        <div class="build-slot" id="slot-mantras" style="cursor: default; flex-direction: column; align-items: stretch; gap: 10px;">
+            <div class="slot-label">Mantras</div>
+            <div class="mantra-list" id="sidebar-mantras"><div class="slot-empty" style="text-align:center;">Empty</div></div>
+        </div>
+        <!-- NEW ENCHANT SLOT -->
+        <div class="build-slot" id="slot-enchant" onclick="openSelectionModal('weapons', 'enchants')">
+            <div class="slot-info">
+                <div class="slot-label">Enchant</div>
+                <div class="slot-content" id="sidebar-enchant"><div class="slot-empty">Empty</div></div>
+            </div>
+        </div>
+        <div class="sidebar-bottom">
+        <div class="sidebar-buttons">
+            <button class="action-btn btn-share" onclick="shareBuild()">Share</button>
+            <button class="action-btn btn-evil" onclick="randomizeBuild()">Evil Ass Button</button>
+            <button class="action-btn btn-clear" onclick="clearBuild()">Clear</button>
+        </div>
+    </div>
+   <div class="sidebar-stats">
+            <div class="stat-row"><span>Total HP</span> <span id="stat-hp">0</span></div>
+            <div class="stat-row"><span>Posture</span> <span id="stat-posture">0</span></div>
+            <div class="stat-row"><span>DMG Buffs</span> <span id="stat-dmg-buffs">0%</span></div>
+            <div class="stat-row"><span>DMG Resis</span> <span id="stat-dmg-resis">0%</span></div>
+        </div>
+
+    <!-- Selection Modal -->
+<div id="selection-modal" class="modal-overlay">
+    <div class="modal-container selection-container">
+        <button class="modal-close abs-close" onclick="closeSelectionModal()">&times;</button>
+        <div class="modal-body-split sharp-edges">
+            <div class="modal-left">
+                <div class="search-bar-container">
+                    <input type="text" id="modal-search" class="search-bar" placeholder="Search items...">
+                    <div id="modal-mantra-tracker" style="display:none; margin-top:12px; background:rgba(0,0,0,0.6); padding:10px; border-radius:0;"></div>
+                </div>
+                <div id="modal-tabs" class="tabs hidden"></div>
+                <div id="item-grid" class="item-grid"></div>
+            </div>
+            <div class="modal-right slim-right">
+                <div id="detail-content">Select an item to see details.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Database Modal -->
+    <div id="db-modal" class="modal-overlay">
+        <div class="glass-panel modal-container db-modal-content">
+            <div class="db-header">
+                <h2>Database Manager</h2>
+                <button class="modal-close" onclick="closeDB()">&times;</button>
+            </div>
+            <div class="db-body">
+                <div id="db-list-view">
+                    <div class="tabs" style="margin-bottom: 25px;">
+                        <button class="tab-btn active" onclick="switchDbTab('kits', this)">Kits</button>
+                        <button class="tab-btn" onclick="switchDbTab('oaths', this)">Oaths</button>
+                        <button class="tab-btn" onclick="switchDbTab('bells', this)">Bells</button>
+                        <button class="tab-btn" onclick="switchDbTab('weapons', this)">Weapons</button>
+                        <button class="tab-btn" onclick="switchDbTab('mantras', this)">Mantras</button>
+                    </div>
+                    <input type="text" id="db-search" class="search-bar" placeholder="Search database..." oninput="renderDbList()">
+                    <div id="db-list" class="db-grid"></div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+    <button id="db-add-btn" onclick="openDbForm()" style="flex:1;">
+        + Add New Item
+    </button>
+
+    <button id="db-add-btn" onclick="exportDatabase()" style="flex:1;">
+        Export JSON
+    </button>
+
+    <button id="db-add-btn" onclick="importDatabase()" style="flex:1;">
+        Import JSON
+    </button>
+</div>
+                </div>
+
+                <div id="db-form-view" class="hidden">
+                    <h3 style="margin-bottom: 20px; font-size: 1.5rem; color: var(--primary);" id="db-form-title">Add Item</h3>
+                    <div class="db-form">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="db-form-name" placeholder="Item Name">
+                        </div>
+                        <div class="form-group" id="db-form-cat-container" style="display:none;">
+                            <label id="db-form-cat-label">Category</label>
+                            <select id="db-form-cat"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Image URL</label>
+                            <input type="text" id="db-form-image" placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="db-form-desc" rows="4" placeholder="Item description..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Description Images (Comma separated URLs)</label>
+                            <input type="text" id="db-form-descImgs" placeholder="URL1, URL2, ...">
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-primary" onclick="saveDbItem()">Save Item</button>
+                            <button class="btn-secondary" onclick="cancelDbForm()">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu"></div>
+
+    <script>
+        // --- CONSTANTS ---
+        // Simulated environment variable for DB access since we use a single file with LocalStorage
+        const DB_PASSWORD = "admin"; 
+
+        const CATEGORIES = {
+            WEAPONS: ['heavy', 'medium', 'light', 'specs', 'enchants'],
+            ATTUNEMENTS: ['Lifeweave', 'Ironsing', 'Flamecharm', 'Thundercall', 'Galebreathe', 'Frostdraw', 'Shadowcast', 'lightkeep', 'ballplay', 'Attunementless']
+        };
+
+        const GEMS = ['bloodless', 'wind', 'blue', 'insignia', 'wayward', 'blessed', 'aegis'];
+        
+        const AUTO_MANTRAS = {
+            'Flamecharm': 'ash slam',
+            'Thundercall': 'rising thunder',
+            'Galebreathe': 'Astral wind',
+            'Shadowcast': 'shade bringer'
+        };
+
+        // --- DEFAULT DATABASE ---
+        const defaultDB = {
+            kits: [
+                {id:'k1', name:'Standard Kit', image:'https://images.unsplash.com/photo-1614030424754-24d0eebd46b2?w=150', description:'Basic starter kit.'}
+            ],
+            oaths: [
+                {id:'o1', name:'Oathless', image:'https://images.unsplash.com/photo-1507608616759-54f48f0af0ee?w=150', description:'No oath taken.'},
+                {id:'o2', name:'Blindseer', image:'https://images.unsplash.com/photo-1519077229555-4674a273ebf1?w=150', description:'See the unseen.'}
+            ],
+            bells: [
+                {id:'b1', name:'Crazy Slots', image:'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=150', description:'Roll for a weapon.'},
+                {id:'b2', name:'Smite', image:'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?w=150', description:'Divine punishment.'}
+            ],
+            weapons: {
+                heavy: [ {id:'wh1', name:'Greatsword', image:'https://images.unsplash.com/photo-1589578228447-e1a4e481c6c8?w=150', description:'Slow and strong.'} ],
+                medium: [ {id:'wm1', name:'Sword', image:'https://images.unsplash.com/photo-1595590424283-b8f17842773f?w=150', description:'Balanced.'} ],
+                light: [ {id:'wl1', name:'Dagger', image:'https://images.unsplash.com/photo-1590419690008-905895e8fe0d?w=150', description:'Fast.'} ],
+                specs: [ {id:'ws1', name:'Fist', image:'https://images.unsplash.com/photo-1555597673-b21d5c935865?w=150', description:'Punch.'} ]
+            },
+            mantras: {
+                Lifeweave: [ { id: 'm_lw1', name: 'Tree of Death', image: '' }, { id: 'm_lw2', name: 'Vine Whip', image: '' } ],
+                Ironsing: [ { id: 'm_ir1', name: 'Metal Eruption', image: '' }, { id: 'm_ir2', name: 'Metal Ball', image: '' } ],
+                Flamecharm: [ { id: 'm_fl1', name: 'Fire blade' }, { id: 'm_fl2', name: 'Fire palm' }, { id: 'm_fl3', name: 'Rising Flame' }, { id: 'm_fl4', name: 'Burning Servants' } ],
+                Thundercall: [ { id: 'm_th1', name: 'Thunder kick' }, { id: 'm_th2', name: 'grand javelin' }, { id: 'm_th3', name: 'Lightning Assault' }, { id: 'm_th4', name: 'Devastating Thrash' } ],
+                Galebreathe: [ { id: 'm_ga1', name: 'Gale lunge' }, { id: 'm_ga2', name: 'Wind blade' }, { id: 'm_ga3', name: 'Heavenly wind' } ],
+                Frostdraw: [ { id: 'm_fr1', name: 'Frost grab' }, { id: 'm_fr2', name: 'ice daggers' }, { id: 'm_fr3', name: 'ice smash' } ],
+                Shadowcast: [ { id: 'm_sh1', name: 'shadow gun' }, { id: 'm_sh2', name: 'shadow eruption' }, { id: 'm_sh3', name: 'clutching shadow' }, { id: 'm_sh4', name: 'shadow roar' } ],
+                lightkeep: [ { id: 'm_lk1', name: 'light blade' }, { id: 'm_lk2', name: 'solar servant' } ],
+                ballplay: [ { id: 'm_bp1', name: 'direct shot' }, { id: 'm_bp2', name: 'two-gun volley' } ],
+                Attunementless: [ { id: 'm_at1', name: 'strong left' }, { id: 'm_at2', name: 'rapid punches' }, { id: 'm_at3', name: 'sky shatter kick' }, { id: 'm_at4', name: 'shoulder bash' }, { id: 'm_at5', name: 'rapid slashes' }, { id: 'm_at6', name: 'masters fluorish' }, { id: 'm_at7', name: 'pressure blast' } ]
+            }
+        };
+
+        // --- STATE ---
+        let db = JSON.parse(localStorage.getItem('deepfaken_db'));
+        if (!db || !db.kits) { db = defaultDB; saveDB(); }
+        if (!db.weapons.enchants) { db.weapons.enchants = []; saveDB(); }
+
+        let currentBuild = { name: "New Build", kit: null, oath: null, weapon: null, enchant: null, bell: null, bellCorrupted: false, mantras: [], notes: ""};
+        
+        let currentSelectionType = null;
+        let currentSelectionTab = null;
+        let previewedItem = null;
+        let currentDbTab = 'kits';
+        let editingItemId = null;
+        let editingItemType = null;
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            if (window.location.hash) {
+                try {
+                    const hash = window.location.hash.substring(1);
+                    const buildData = JSON.parse(decodeURIComponent(atob(hash)));
+                    if(buildData.name) {
+                        currentBuild = buildData;
+                        document.getElementById('build-name-input').value = currentBuild.name;
+                    }
+                } catch(e) { console.error('Failed to load build from URL'); }
+            }
+            renderSidebar();
+        };
+
+        // --- CORE FUNCTIONS ---
+        function saveDB() {
+            localStorage.setItem('deepfaken_db', JSON.stringify(db));
+        }
+
+        function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+        function updateBuildName(val) { currentBuild.name = val; }
+
+        function renderSidebar() {
+    const nameInput = document.getElementById('build-name-input');
+    if (nameInput) nameInput.value = currentBuild.name;
+
+    const notesInput = document.getElementById('build-notes');
+    if (notesInput) notesInput.value = currentBuild.notes || "";
+
+    const renderSlot = (id, item, isCorrupt = false) => {
+                const container = document.getElementById(id);
+                if (!item) {
+                    container.innerHTML = '<div class="slot-empty">Empty</div>';
+                } else {
+                    const imgSrc = item.image || `https://via.placeholder.com/60?text=${item.name.charAt(0)}`;
+                    const corruptClass = isCorrupt ? 'corrupted-text' : '';
+                    const corruptSuffix = isCorrupt ? ' (Corrupted)' : '';
+                    container.innerHTML = `
+                        <img src="${imgSrc}" class="slot-image">
+                        <div class="slot-text ${corruptClass}">${item.name}${corruptSuffix}</div>
+                    `;
+                }
+            };
+
+renderSlot('sidebar-kit', currentBuild.kit);
+    renderSlot('sidebar-oath', currentBuild.oath);
+    
+
+    const wContainer = document.getElementById('sidebar-weapon');
+    if (!currentBuild.weapon) wContainer.innerHTML = '<div class="slot-empty">Empty</div>';
+    else {
+        wContainer.innerHTML = `<img src="${currentBuild.weapon.image || 'https://via.placeholder.com/60'}" class="slot-image"><div class="slot-text">${currentBuild.weapon.name}</div>`;
+    }
+
+
+    const eContainer = document.getElementById('sidebar-enchant');
+    if (!currentBuild.weaponEnchant) eContainer.innerHTML = '<div class="slot-empty">Empty</div>';
+    else {
+        eContainer.innerHTML = `<img src="${currentBuild.weaponEnchant.image || 'https://via.placeholder.com/60'}" class="slot-image"><div class="slot-text" style="color:#e056fd;">${currentBuild.weaponEnchant.name}</div>`;
+    }
+
+  
+    const bContainer = document.getElementById('sidebar-bell');
+    if (!currentBuild.bell) {
+        bContainer.innerHTML = '<div class="slot-empty">Empty</div>';
+    } else {
+        const b = currentBuild.bell;
+        const imgSrc = b.image || `https://via.placeholder.com/60?text=${b.name.charAt(0)}`;
+        const corruptClass = currentBuild.bellCorrupted ? 'corrupted-text' : '';
+        const corruptSuffix = currentBuild.bellCorrupted ? ' (Corrupted)' : '';
+        bContainer.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                <img src="${imgSrc}" class="slot-image">
+                <div class="slot-text ${corruptClass}" style="flex:1;">${b.name}${corruptSuffix}</div>
+                <button onclick="event.stopPropagation(); toggleCorrupt()" style="padding: 4px 6px; background: rgba(255,71,87,0.2); color: #ff4757; border: 1px solid #ff4757; border-radius: 6px; font-weight:bold; font-size: 0.65rem; cursor: pointer;">CORRUPT</button>
+            </div>
+        `;
+    }
+
+    const mContainer = document.getElementById('sidebar-mantras');
+    mContainer.innerHTML = '';
+    
+    if (currentBuild.mantras.length === 0) {
+        mContainer.innerHTML = '<div class="slot-empty" style="text-align:center; padding: 10px 0;">Empty</div>';
+    } else {
+        currentBuild.mantras.forEach((m, idx) => {
+            const imgSrc = m.mantra.image || `https://via.placeholder.com/60?text=${m.mantra.name.charAt(0)}`;
+            mContainer.innerHTML += `
+                <div class="mantra-slot">
+                    <img src="${imgSrc}">
+                    <div class="slot-text" style="font-size:1rem;">${m.mantra.name}</div>
+                    ${m.gem ? `<div class="gem-badge">${m.gem}</div>` : ''}
+                </div>
+            `;
+        });
+        if (currentBuild.mantras.length === 2) {
+            const att1 = currentBuild.mantras[0].mantra._att;
+            const att2 = currentBuild.mantras[1].mantra._att;
+            if (att1 && att1 === att2 && AUTO_MANTRAS[att1]) {
+                mContainer.innerHTML += `
+                    <div class="mantra-slot auto-mantra" style="border: 1px dashed gold;">
+                        <div class="slot-text" style="font-size:0.95rem; color: gold; margin-left: 5px;">${AUTO_MANTRAS[att1]}</div>
+                        <div class="auto-badge">BONUS</div>
+                    </div>
+                `;
+            }
+        }
+    }
+    calculateStats();
+}
+
+function toggleCorrupt() {
+    currentBuild.bellCorrupted = !currentBuild.bellCorrupted;
+    renderSidebar();
+}
+
+        // --- SELECTION MODAL ---
+function openSelectionModal(type, forceTab = null) {
+    currentSelectionType = type;
+    document.getElementById('modal-search').value = '';
+
+    const tabsContainer = document.getElementById('modal-tabs');
+    tabsContainer.innerHTML = '';
+
+  const modalBody = document.querySelector('#selection-modal .modal-body-split');
+    
+    switch(type) {
+        case 'bells':
+            modalBody.style.background = "url('bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            break;
+        case 'weapons':
+            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            break;
+        case 'oaths':
+            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            break;
+        case 'kits':
+            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            break;
+        case 'mantras':
+            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            break;
+        default:
+            modalBody.style.background = "rgba(15, 20, 25, 0.65)"; 
+            break;
+    }
+
+    if (type === 'weapons') {
+        tabsContainer.classList.remove('hidden');
+        CATEGORIES.WEAPONS.forEach((cat, idx) => {
+            let btn = document.createElement('button');
+            btn.className = `tab-btn ${cat === (forceTab || 'heavy') ? 'active' : ''}`;
+            btn.innerText = cat.toUpperCase();
+            btn.onclick = () => {
+                document.querySelectorAll('#modal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSelectionTab = cat;
+                renderSelectionGrid();
+            };
+            tabsContainer.appendChild(btn);
+        });
+        currentSelectionTab = forceTab || 'heavy';
+    } else if (type === 'mantras') {
+        tabsContainer.classList.remove('hidden');
+        CATEGORIES.ATTUNEMENTS.forEach((att, idx) => {
+            let btn = document.createElement('button');
+            btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
+            btn.innerText = att;
+            btn.onclick = () => {
+                document.querySelectorAll('#modal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSelectionTab = att;
+                renderSelectionGrid();
+            };
+            tabsContainer.appendChild(btn);
+        });
+        currentSelectionTab = forceTab || CATEGORIES.ATTUNEMENTS[0];
+    } else {
+        tabsContainer.classList.add('hidden');
+        currentSelectionTab = null;
+    }
+    
+    renderSelectionGrid();
+    document.getElementById('selection-modal').classList.add('active');
+}
+
+        function closeSelectionModal() {
+            document.getElementById('selection-modal').classList.remove('active');
+        }
+
+function renderSelectionGrid() {
+    const grid = document.getElementById('item-grid');
+    grid.innerHTML = '';
+    
+    let items = [];
+    if (currentSelectionType === 'weapons') items = db.weapons[currentSelectionTab] || [];
+    else if (currentSelectionType === 'mantras') items = db.mantras[currentSelectionTab] || [];
+    else items = db[currentSelectionType] || [];
+    
+    const query = document.getElementById('modal-search').value.toLowerCase();
+    items = items.filter(i => i.name.toLowerCase().includes(query));
+
+    // Update Mantra Tracker
+    const tracker = document.getElementById('modal-mantra-tracker');
+    if (currentSelectionType === 'mantras') {
+        tracker.style.display = 'block';
+        let trackerHtml = `<div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">SELECTED MANTRAS (${currentBuild.mantras.length}/2)</div><div style="display:flex; gap:10px; flex-wrap:wrap;">`;
+        currentBuild.mantras.forEach(m => {
+            trackerHtml += `<div style="background:var(--primary); color:#000; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold;">${m.mantra.name}</div>`;
+        });
+        if (currentBuild.mantras.length === 2) {
+            const att1 = currentBuild.mantras[0].mantra._att;
+            const att2 = currentBuild.mantras[1].mantra._att;
+            if (att1 && att1 === att2 && AUTO_MANTRAS[att1]) {
+                trackerHtml += `<div style="background:rgba(255, 215, 0, 0.2); border: 1px solid gold; color:gold; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold;">+ ${AUTO_MANTRAS[att1]} (Bonus)</div>`;
+            }
+        }
+        trackerHtml += `</div>`;
+        tracker.innerHTML = trackerHtml;
+    } else {
+        tracker.style.display = 'none';
+    }
+
+    items.forEach(item => {
+        let isSelected = false;
+        if (currentSelectionType === 'kits' && currentBuild.kit?.id === item.id) isSelected = true;
+        else if (currentSelectionType === 'oaths' && currentBuild.oath?.id === item.id) isSelected = true;
+        else if (currentSelectionType === 'weapons' && currentSelectionTab !== 'enchants' && currentBuild.weapon?.id === item.id) isSelected = true;
+        else if (currentSelectionType === 'weapons' && currentSelectionTab === 'enchants' && currentBuild.weaponEnchant?.id === item.id) isSelected = true;
+        else if (currentSelectionType === 'bells' && currentBuild.bell?.id === item.id) isSelected = true;
+        else if (currentSelectionType === 'mantras' && currentBuild.mantras.some(m => m.mantra.id === item.id)) isSelected = true;
+
+        let card = document.createElement('div');
+        card.className = 'item-card';
+        if (isSelected) {
+            card.style.borderColor = 'var(--secondary)';
+            card.style.background = 'rgba(74, 222, 128, 0.1)';
+        }
+
+        card.innerHTML = `<img src="${item.image || 'https://via.placeholder.com/80?text='+item.name.charAt(0)}"><div class="name">${item.name}</div>`;
+        
+        card.onclick = () => {
+            selectItem(item); 
+            showDetails(item); 
+        };
+        grid.appendChild(card);
+    });
+    
+    if(items.length > 0) showDetails(items[0]);
+    else document.getElementById('detail-content').innerHTML = '<div style="color:#888; text-align:center; padding: 40px;">No items found.</div>';
+}
+        document.getElementById('modal-search').addEventListener('input', renderSelectionGrid);
+
+function showDetails(item) {
+    if (!item) return;
+    let extraImgsHtml = '';
+    const safeImages = item.descImages || '';
+    if(safeImages) {
+        const urls = safeImages.split(',').map(u => u.trim()).filter(u => u);
+        urls.forEach(u => extraImgsHtml += `<img src="${u}">`);
+    }
+
+    let gemHtml = '';
+    if (currentSelectionType === 'mantras') {
+        const equippedMantra = currentBuild.mantras.find(m => m.mantra.id === item.id);
+        if (equippedMantra) {
+            const gemButtons = GEMS.map(g => {
+                const isActive = equippedMantra.gem === g;
+                return `<button onclick="setMantraGem('${item.id}', '${g}')" style="padding: 6px 12px; border-radius: 6px; background: ${isActive ? 'var(--primary)' : 'rgba(0,0,0,0.5)'}; color: ${isActive ? '#000' : '#fff'}; border: 1px solid var(--primary); font-weight: bold; cursor: pointer; transition: 0.2s;">${g}</button>`;
+            }).join('');
+            
+            gemHtml = `
+                <div style="margin-top: 20px; padding: 15px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.3); border-radius: 12px;">
+                    <div style="color: var(--primary); margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 0.85rem;">Equip Gem</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        ${gemButtons}
+                        <button onclick="setMantraGem('${item.id}', null)" style="padding: 6px 12px; border-radius: 6px; background: rgba(255,71,87,0.2); color: var(--danger); border: 1px solid var(--danger); font-weight: bold; cursor: pointer;">Clear Gem</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    document.getElementById('detail-content').innerHTML = `
+        <img class="detail-img" src="${item.image || 'https://via.placeholder.com/120?text=No+Img'}">
+        <div class="detail-name">${item.name}</div>
+        <div class="detail-desc">${item.description || 'No description provided.'}</div>
+        ${gemHtml}
+        <div class="detail-extra-imgs" style="margin-top: 15px;">${extraImgsHtml}</div>
+    `;
+}
+
+
+function setMantraGem(mantraId, gemName) {
+    const mIndex = currentBuild.mantras.findIndex(m => m.mantra.id === mantraId);
+    if (mIndex > -1) {
+        currentBuild.mantras[mIndex].gem = gemName;
+        renderSidebar(); // Update the sidebar visually
+        showDetails(currentBuild.mantras[mIndex].mantra);
+    }
+}
+
+ function selectItem(item, isCorrupted = false) {
+    if (currentSelectionType === 'kits') currentBuild.kit = item;
+    else if (currentSelectionType === 'oaths') currentBuild.oath = item;
+    else if (currentSelectionType === 'weapons') {
+        if (currentSelectionTab === 'enchants') currentBuild.weaponEnchant = item;
+        else currentBuild.weapon = item;
+    }
+    else if (currentSelectionType === 'bells') {
+        currentBuild.bell = item;
+        currentBuild.bellCorrupted = isCorrupted;
+    }
+    else if (currentSelectionType === 'mantras') {
+        const existingIdx = currentBuild.mantras.findIndex(m => m.mantra.id === item.id);
+        if (existingIdx > -1) {
+            currentBuild.mantras.splice(existingIdx, 1); 
+        } else if (currentBuild.mantras.length < 2) {
+            currentBuild.mantras.push({ mantra: {...item, _att: currentSelectionTab}, gem: null });
+        } else {
+            alert('You can only pick 2 mantras maximum! Click a selected one to remove it.');
+        }
+    }
+    
+    renderSidebar();
+    renderSelectionGrid(); 
+}
+
+        // --- CONTEXT MENU FOR MANTRAS ---
+        function openMantraContextMenu(e, index) {
+            e.stopPropagation();
+            const ctx = document.getElementById('context-menu');
+            ctx.innerHTML = '';
+            
+            let removeBtn = document.createElement('div');
+            removeBtn.className = 'ctx-item ctx-danger';
+            removeBtn.innerText = 'Remove Mantra';
+            removeBtn.onclick = () => {
+                currentBuild.mantras.splice(index, 1);
+                renderSidebar();
+                closeCtx();
+            };
+            ctx.appendChild(removeBtn);
+
+            let hr = document.createElement('div');
+            hr.style.height = '1px'; hr.style.background = 'rgba(255,255,255,0.1)'; hr.style.margin = '5px 0';
+            ctx.appendChild(hr);
+
+            let gemHeader = document.createElement('div');
+            gemHeader.style.padding = '5px 15px'; gemHeader.style.color = '#888'; gemHeader.style.fontSize = '0.75rem'; gemHeader.style.textTransform = 'uppercase';
+            gemHeader.innerText = 'Equip Gem:';
+            ctx.appendChild(gemHeader);
+
+            GEMS.forEach(gem => {
+                let btn = document.createElement('div');
+                btn.className = 'ctx-item';
+                btn.innerText = gem;
+                btn.onclick = () => {
+                    currentBuild.mantras[index].gem = gem;
+                    renderSidebar();
+                    closeCtx();
+                };
+                ctx.appendChild(btn);
+            });
+
+            if (currentBuild.mantras[index].gem) {
+                let noGem = document.createElement('div');
+                noGem.className = 'ctx-item ctx-danger';
+                noGem.style.marginTop = '5px';
+                noGem.innerText = 'Unequip Gem';
+                noGem.onclick = () => {
+                    currentBuild.mantras[index].gem = null;
+                    renderSidebar();
+                    closeCtx();
+                };
+                ctx.appendChild(noGem);
+            }
+
+            ctx.style.display = 'block';
+            
+            // Adjust position to not go off-screen
+            let x = e.clientX;
+            let y = e.clientY;
+            if (x + 200 > window.innerWidth) x -= 200;
+            if (y + 300 > window.innerHeight) y -= 300;
+            
+            ctx.style.left = x + 'px';
+            ctx.style.top = y + 'px';
+        }
+
+        function closeCtx() { document.getElementById('context-menu').style.display = 'none'; }
+        window.addEventListener('click', closeCtx);
+
+    function shareBuild() {
+    let shareText = `${currentBuild.name}\n\n`; 
+    
+    const wName = currentBuild.weapon ? currentBuild.weapon.name : 'None';
+    const eName = currentBuild.weaponEnchant ? `(Enchant: ${currentBuild.weaponEnchant.name})` : '';
+    shareText += `Weapon: ${wName} ${eName}\n`;
+    
+    const bName = currentBuild.bell ? currentBuild.bell.name + (currentBuild.bellCorrupted ? ' (Corrupted)' : '') : 'None';
+    shareText += `Bell: ${bName}\n`;
+    
+    shareText += `Kit: ${currentBuild.kit ? currentBuild.kit.name : 'None'}\n`;
+    shareText += `Oath: ${currentBuild.oath ? currentBuild.oath.name : 'None'}\n\n`;
+    
+    shareText += `Mantras:\n`;
+    if (currentBuild.mantras.length === 0) {
+        shareText += ` - None\n`;
+    } else {
+        currentBuild.mantras.forEach(m => {
+            shareText += ` - ${m.mantra.name} ${m.gem ? '[' + m.gem + ']' : ''}\n`;
+        });
+    }
+
+    if (currentBuild.notes && currentBuild.notes.trim() !== "") {
+        shareText += `\nNotes:\n${currentBuild.notes}\n`;
+    }
+    
+    navigator.clipboard.writeText(shareText).then(() => {
+        alert('Build text copied to clipboard!');
+    }).catch(() => {
+        alert('Failed to copy text.');
+    });
+}
+
+        function clearBuild() {
+    if(confirm("Are you sure you want to clear your current build?")) {
+        currentBuild = { name: "New Build", kit: null, oath: null, weapon: null, weaponEnchant: null, bell: null, bellCorrupted: false, mantras: [], notes: "" };
+        renderSidebar();
+    }
+}
+
+        function pickRandom(arr) { return (!arr || arr.length === 0) ? null : arr[Math.floor(Math.random() * arr.length)]; }
+
+        function randomizeBuild() {
+            currentBuild.kit = pickRandom(db.kits);
+            currentBuild.oath = pickRandom(db.oaths);
+            currentBuild.bell = pickRandom(db.bells);
+            currentBuild.bellCorrupted = Math.random() > 0.5;
+            
+            const wCat = pickRandom(CATEGORIES.WEAPONS);
+            currentBuild.weapon = pickRandom(db.weapons[wCat]);
+
+            currentBuild.mantras = [];
+            const allAtts = CATEGORIES.ATTUNEMENTS;
+            for(let i=0; i<2; i++) {
+                const att = pickRandom(allAtts);
+                if(db.mantras[att] && db.mantras[att].length > 0) {
+                    const m = pickRandom(db.mantras[att]);
+                    if (m && !currentBuild.mantras.find(x => x.mantra.id === m.id)) {
+                        currentBuild.mantras.push({
+                            mantra: { ...m, _att: att },
+                            gem: Math.random() > 0.6 ? pickRandom(GEMS) : null
+                        });
+                    }
+                }
+            }
+            renderSidebar();
+        }
+
+        // --- DATABASE MANAGEMENT ---
+        function openDB() {
+            const pw = prompt("Enter Database Password:");
+            if (pw === DB_PASSWORD) {
+                document.getElementById('db-modal').classList.add('active');
+                switchDbTab('kits', document.querySelector('.db-body .tab-btn'));
+            } else if (pw !== null) {
+                alert("Incorrect password. Hint: check the code.");
+            }
+        }
+
+        function closeDB() {
+            document.getElementById('db-modal').classList.remove('active');
+            cancelDbForm();
+        }
+
+        function switchDbTab(tab, btnElement) {
+            currentDbTab = tab;
+            if(btnElement) {
+                document.querySelectorAll('.db-body .tab-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            document.getElementById('db-search').value = '';
+            renderDbList();
+        }
+
+        function getFlatDbList(type) {
+            if (type === 'weapons') {
+                let arr = [];
+                CATEGORIES.WEAPONS.forEach(cat => {
+                    if(db.weapons[cat]) arr = arr.concat(db.weapons[cat].map(i => ({...i, _sub: cat})));
+                });
+                return arr;
+            }
+            if (type === 'mantras') {
+                let arr = [];
+                CATEGORIES.ATTUNEMENTS.forEach(att => {
+                    if(db.mantras[att]) arr = arr.concat(db.mantras[att].map(i => ({...i, _att: att})));
+                });
+                return arr;
+            }
+            return db[type] || [];
+        }
+
+        function renderDbList() {
+            const listContainer = document.getElementById('db-list');
+            listContainer.innerHTML = '';
+            
+            let list = getFlatDbList(currentDbTab);
+            const query = document.getElementById('db-search').value.toLowerCase();
+            if(query) list = list.filter(i => i.name.toLowerCase().includes(query));
+
+            list.forEach(item => {
+                const catLabel = item._sub ? `[${item._sub}]` : (item._att ? `[${item._att}]` : '');
+                const row = document.createElement('div');
+                row.className = 'db-row';
+                row.innerHTML = `
+                    <img src="${item.image || 'https://via.placeholder.com/40'}">
+                    <div class="db-row-name">${item.name} <span class="db-row-cat">${catLabel}</span></div>
+                    <div class="db-actions">
+                        <button class="btn-edit" onclick="openDbForm('${currentDbTab}', '${item.id}')">Edit</button>
+                        <button class="btn-del" onclick="deleteDbItem('${currentDbTab}', '${item.id}')">Delete</button>
+                    </div>
+                `;
+                listContainer.appendChild(row);
+            });
+            
+            if(list.length===0) listContainer.innerHTML = '<div style="color:#888; padding:20px;">No items found.</div>';
+        }
+
+        function deleteDbItem(type, id) {
+            if(!confirm("Delete this item permanently?")) return;
+            
+            if (type === 'weapons') {
+                CATEGORIES.WEAPONS.forEach(c => { db.weapons[c] = db.weapons[c].filter(i => i.id !== id); });
+            } else if (type === 'mantras') {
+                CATEGORIES.ATTUNEMENTS.forEach(c => { if(db.mantras[c]) db.mantras[c] = db.mantras[c].filter(i => i.id !== id); });
+            } else {
+                db[type] = db[type].filter(i => i.id !== id);
+            }
+            saveDB();
+            renderDbList();
+        }
+
+        function openDbForm(type = currentDbTab, id = null) {
+            editingItemType = type;
+            let item = null;
+            
+            if (id) {
+                item = getFlatDbList(type).find(i => i.id === id);
+            }
+            
+            editingItemId = item ? item.id : generateId();
+            document.getElementById('db-form-title').innerText = item ? `Edit ${type.slice(0,-1)}` : `Add New ${type.slice(0,-1)}`;
+            
+            document.getElementById('db-form-name').value = item ? item.name : '';
+            document.getElementById('db-form-image').value = item ? (item.image||'') : '';
+            document.getElementById('db-form-desc').value = item ? (item.description||'') : '';
+            document.getElementById('db-form-descImgs').value = item ? (item.descImages||'') : '';
+            
+            const catContainer = document.getElementById('db-form-cat-container');
+            const catSelect = document.getElementById('db-form-cat');
+            catSelect.innerHTML = '';
+            
+            if (type === 'weapons') {
+                catContainer.style.display = 'flex';
+                document.getElementById('db-form-cat-label').innerText = 'Weapon Category';
+                CATEGORIES.WEAPONS.forEach(c => { catSelect.innerHTML += `<option value="${c}">${c}</option>`; });
+                if(item && item._sub) catSelect.value = item._sub;
+            } else if (type === 'mantras') {
+                catContainer.style.display = 'flex';
+                document.getElementById('db-form-cat-label').innerText = 'Attunement';
+                CATEGORIES.ATTUNEMENTS.forEach(c => { catSelect.innerHTML += `<option value="${c}">${c}</option>`; });
+                if(item && item._att) catSelect.value = item._att;
+            } else {
+                catContainer.style.display = 'none';
+            }
+            
+            document.getElementById('db-list-view').classList.add('hidden');
+            document.getElementById('db-form-view').classList.remove('hidden');
+            }
+
+        function cancelDbForm() {
+            document.getElementById('db-list-view').classList.remove('hidden');
+            document.getElementById('db-form-view').classList.add('hidden');
+            }
+
+        function saveDbItem() {
+            const name = document.getElementById('db-form-name').value.trim();
+            if(!name) return alert('Name is required');
+            
+            const item = {
+                id: editingItemId,
+                name: name,
+                image: document.getElementById('db-form-image').value.trim(),
+                description: document.getElementById('db-form-desc').value.trim(),
+                descImages: document.getElementById('db-form-descImgs').value.trim()
+            };
+            
+            const cat = document.getElementById('db-form-cat').value;
+            
+            if (editingItemType === 'weapons') {
+                CATEGORIES.WEAPONS.forEach(c => { db.weapons[c] = db.weapons[c].filter(i => i.id !== item.id); });
+                db.weapons[cat].push(item);
+            } else if (editingItemType === 'mantras') {
+                CATEGORIES.ATTUNEMENTS.forEach(c => { if(db.mantras[c]) db.mantras[c] = db.mantras[c].filter(i => i.id !== item.id); });
+                if(!db.mantras[cat]) db.mantras[cat] = [];
+                db.mantras[cat].push(item);
+            } else {
+                let list = db[editingItemType];
+                const idx = list.findIndex(i => i.id === item.id);
+                if(idx > -1) list[idx] = item;
+                else list.push(item);
+            }
+            
+            saveDB();
+            cancelDbForm();
+            renderDbList();
+        }
+
+function updateNotes(val) { currentBuild.notes = val; }
+function hideStartScreen() {
+    const screen = document.getElementById('start-screen');
+    screen.classList.add('fade-out');
+    setTimeout(() => {
+        screen.style.display = 'none';
+    }, 500); 
+}
+function extractStat(desc, statName) {
+    if (!desc) return 0;
+    const regex = new RegExp(`${statName}:?\\s*\\+?(-?\\d+(?:\\.\\d+)?)`, 'i');
+    const match = desc.match(regex);
+    return match ? parseFloat(match[1]) : 0;
+}
+
+function calculateStats() {
+    let totalHp = 0, posture = 0, dmgBuffs = 0, dmgResis = 0;
+    
+    const items = [
+        currentBuild.kit, 
+        currentBuild.oath, 
+        currentBuild.weapon, 
+        currentBuild.weaponEnchant, 
+        currentBuild.bell
+    ];
+    currentBuild.mantras.forEach(m => items.push(m.mantra));
+
+    items.forEach(item => {
+        if (item && item.description) {
+            totalHp += extractStat(item.description, 'Total HP');
+            posture += extractStat(item.description, 'Posture');
+            dmgBuffs += extractStat(item.description, 'DMG Buffs');
+            dmgResis += extractStat(item.description, 'DMG Resis');
+        }
+    });
+
+    // Update the UI
+    document.getElementById('stat-hp').innerText = totalHp;
+    document.getElementById('stat-posture').innerText = posture;
+    document.getElementById('stat-dmg-buffs').innerText = dmgBuffs + '%';
+    document.getElementById('stat-dmg-resis').innerText = dmgResis + '%';
+}
+function exportDatabase() {
+    const dataStr = JSON.stringify(db, null, 2);
+
+    const blob = new Blob([dataStr], {
+        type: "application/json"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'deepfaken-database.json';
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+function importDatabase() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            try {
+                const imported = JSON.parse(event.target.result);
+
+                db = imported;
+
+                saveDB();
+                renderDbList();
+                renderSidebar();
+
+                alert('Database imported successfully!');
+            } catch (err) {
+                alert('Invalid JSON file.');
+                console.error(err);
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
+    input.click();
+}
+</script>
+</body>
+</html>
