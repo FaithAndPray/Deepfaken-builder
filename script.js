@@ -253,7 +253,7 @@ function closeDB() {
     const type = editingItemType;
     const cat = document.getElementById('db-form-cat').value;
     
-    document.getElementById('db-form-stats-container').style.display = (type === 'kits' || type === 'oaths' || type === 'weapons') ? 'flex' : 'none';
+    document.getElementById('db-form-stats-container').style.display = (type === 'kits' || type === 'oaths' || type === 'weapons' || type === 'bells') ? 'flex' : 'none';
     document.getElementById('db-form-weapon-container').style.display = (type === 'weapons' && cat !== 'enchants') ? 'flex' : 'none';
     document.getElementById('db-form-mantra-container').style.display = (type === 'mantras') ? 'flex' : 'none';
     document.getElementById('db-form-bell-container').style.display = (type === 'bells') ? 'flex' : 'none';
@@ -372,7 +372,7 @@ function openDbForm(type = currentDbTab, id = null) {
 function calculateStats() {
     let totalHp = 300, posture = 30, dmgBuffs = 0, dmgResis = 0, speedBuffs = 0;
 
-    const allEquipped = [currentBuild.kit, currentBuild.oath, currentBuild.weapon, currentBuild.weaponEnchant].filter(item => item);
+    const allEquipped = [currentBuild.kit, currentBuild.oath, currentBuild.weapon, currentBuild.weaponEnchant, currentBuild.bell].filter(item => item);
 
     allEquipped.forEach(item => {
         totalHp += (item.hp || 0);
