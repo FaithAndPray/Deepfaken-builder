@@ -19,7 +19,7 @@
 
         body {
     font-family: 'Outfit', sans-serif;
-    background: url('background.png') center/cover no-repeat, #080a0f;
+    background: url('pics/background.png') center/cover no-repeat, #080a0f;
     color: var(--text-main);
     height: 100vh;
     display: flex;
@@ -231,7 +231,7 @@
             align-items: center;
             gap: 12px;
             cursor: pointer;
-            border-image: url('border-normal.png') 24 fill stretch;
+            border-image: url('pics/border-normal.png') 24 fill stretch;
             min-height: 85px;
         }
 
@@ -467,7 +467,7 @@
     width: 85%;
     height: 85%;
     border: 8px solid #111; 
-    background: url('meaubg.png') center/cover no-repeat, #151515; 
+    background: url('pics/meaubg.png') center/cover no-repeat, #151515 !important; 
     z-index: 10;
     overflow: hidden; 
 }
@@ -587,4 +587,16 @@
 .stat-row span:last-child {
     color: white;
     font-weight: 800;
+}
+.stats-container {
+    border: 8px solid #111 !important;
+    background: url('pics/meaubg.png') center/cover no-repeat, rgba(15, 15, 15, 0.95) !important;
+    border-radius: 0 !important;
+    max-width: 600px;
+    height: 70%;
+}
+
+.sidebar-stats:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 15px rgba(255,255,255,0.05);
 }

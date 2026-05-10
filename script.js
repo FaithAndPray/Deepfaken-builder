@@ -273,6 +273,7 @@ function openDbForm(type = currentDbTab, id = null) {
     document.getElementById('db-form-name').value = item ? item.name : '';
     document.getElementById('db-form-image').value = item ? (item.image||'') : '';
     document.getElementById('db-form-desc').value = item ? (item.description||'') : '';
+    document.getElementById('db-form-stat-details').value = item?.statDetails || '';
     
     // Set Stats
     document.getElementById('db-form-hp').value = item?.hp || 0;
@@ -334,7 +335,8 @@ function openDbForm(type = currentDbTab, id = null) {
         speedBuff: parseFloat(document.getElementById('db-form-speedbuff').value) || 0,
         m1Dmg: parseFloat(document.getElementById('db-form-m1dmg').value) || 0,
         isBonus: document.getElementById('db-form-isbonus').checked,
-        canCorrupt: document.getElementById('db-form-cancorrupt').checked
+        canCorrupt: document.getElementById('db-form-cancorrupt').checked,
+        statDetails: document.getElementById('db-form-stat-details').value.trim()
     };
     
     const cat = document.getElementById('db-form-cat').value;
@@ -398,7 +400,58 @@ function calculateStats() {
         m1Text.innerText = `M1 DMG: ${parseFloat(finalM1.toFixed(1))}`;
     }
 }
+function openStatsModal() {
+    const content = document.getElementById('stats-detail-content');
+    content.innerHTML = '';
 
+    // Gather all equipped items including mantras
+    let equipped = [
+        { type: 'Kit', item: currentBuild.kit },
+        { type: 'Oath', item: currentBuild.oath },
+        { type: 'Weapon', item: currentBuild.weapon },
+        { type: 'Enchant', item: currentBuild.weaponEnchant },
+        { type: 'Bell', item: currentBuild.bell }
+    ];
+    currentBuild.mantras.forEach(m => equipped.push({ type: 'Mantra', item: m.mantra }));
+
+    let html = '';
+    equipped.forEach(entry => {
+        if (!entry.item) return;
+        const i = entry.item;
+        
+        // Only show if it has stats or details
+        if (!i.hp && !i.posture && !i.dmgBuff && !i.dmgResis && !i.speedBuff && !i.statDetails) return;
+
+        let statsArr = [];
+        if (i.hp) statsArr.push(`HP: ${i.hp > 0 ? '+'+i.hp : i.hp}`);
+        if (i.posture) statsArr.push(`Posture: ${i.posture > 0 ? '+'+i.posture : i.posture}`);
+        if (i.dmgBuff) statsArr.push(`DMG Buff: ${i.dmgBuff > 0 ? '+'+i.dmgBuff : i.dmgBuff}%`);
+        if (i.dmgResis) statsArr.push(`Resis: ${i.dmgResis > 0 ? '+'+i.dmgResis : i.dmgResis}%`);
+        if (i.speedBuff) statsArr.push(`Speed: ${i.speedBuff > 0 ? '+'+i.speedBuff : i.speedBuff}%`);
+
+        html += `
+            <div style="background: rgba(0,0,0,0.6); padding: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                <div style="font-weight: 800; font-size: 1.2rem; color: #fff; margin-bottom: 5px;">
+                    <span style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin-right: 10px;">[${entry.type}]</span>${i.name}
+                </div>
+                <div style="color: var(--secondary); font-size: 0.9rem; font-weight: bold; margin-bottom: ${i.statDetails ? '8px' : '0'};">
+                    ${statsArr.join(' &nbsp;|&nbsp; ')}
+                </div>
+                ${i.statDetails ? `<div style="color: #ccc; font-size: 0.95rem; white-space: pre-wrap; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">${i.statDetails}</div>` : ''}
+            </div>
+        `;
+    });
+
+    if (html === '') html = '<div style="color:#888; text-align:center; padding: 20px;">No stat-altering items equipped.</div>';
+    content.innerHTML = html;
+    
+    document.getElementById('stats-modal').classList.add('active');
+}
+
+function closeStatsModal(e) {
+    if (e) e.stopPropagation();
+    document.getElementById('stats-modal').classList.remove('active');
+}
 // SIDEBAR RENDERING
         function renderSidebar() {
     const nameInput = document.getElementById('build-name-input');
@@ -517,19 +570,19 @@ function openSelectionModal(type, forceTab = null) {
     
     switch(type) {
         case 'bells':
-            modalBody.style.background = "url('bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
             break;
         case 'weapons':
-            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
             break;
         case 'oaths':
-            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
             break;
         case 'kits':
-            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
             break;
         case 'mantras':
-            modalBody.style.background = "url('meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
             break;
         default:
             modalBody.style.background = "rgba(15, 20, 25, 0.65)"; 
