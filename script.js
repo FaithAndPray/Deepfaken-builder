@@ -43,12 +43,13 @@
         if (!db || !db.kits) { db = defaultDB; saveDB(); }
         if (!db.weapons.enchants) { db.weapons.enchants = []; saveDB(); }
 
-        let currentBuild = { name: "New Build", kit: null, oath: null, weapon: null, enchant: null, bell: null, bellCorrupted: false, mantras: [], notes: "", bonusMantraGem: null };
+        let currentBuild = { kit: null, oath: null, weapon: null, enchant: null, bell: null, bellCorrupted: false, mantras: [], notes: "", bonusMantraGem: null };
         
         let currentSelectionType = null;
         let currentSelectionTab = null;
         let previewedItem = null;
         let currentDbTab = 'kits';
+        let currentDbSubTab = null;
         let editingItemId = null;
         let editingItemType = null;
         let currentSessionToken = null;
@@ -81,14 +82,10 @@
         try {
             const hash = window.location.hash.substring(1);
             const buildData = JSON.parse(decodeURIComponent(atob(hash)));
-            if(buildData.name) {
-                currentBuild = buildData;
-                
-                const nameInput = document.getElementById('build-name-input');
-                if (nameInput) nameInput.value = currentBuild.name;
-                
-                loadedFromShareLink = true;
-            }
+            if(buildData) {
+            currentBuild = buildData;
+            loadedFromShareLink = true;
+        }
         } catch(e) { console.error('Failed to load build from URL'); }
     }
 
@@ -109,7 +106,7 @@
 // DATABASE MANAGEMENT
 
 async function openDB() {
-    const pw = prompt("Enter Admin Password:");
+    const pw = prompt("Enter Password:");
     if (!pw) return;
 
     document.body.style.cursor = "wait";
@@ -177,39 +174,60 @@ async function openDB() {
     }
 }
 
-function closeDB() {
+        function closeDB() {
             document.getElementById('db-modal').classList.remove('active');
             cancelDbForm();
         }
 
-        function switchDbTab(tab, btnElement) {
-            currentDbTab = tab;
-            if(btnElement) {
-                document.querySelectorAll('.db-body .tab-btn').forEach(b => b.classList.remove('active'));
-                btnElement.classList.add('active');
-            }
-            document.getElementById('db-search').value = '';
-            renderDbList();
-        }
+    function switchDbTab(tab, btnElement) {
+    currentDbTab = tab;
+    if(btnElement) {
+        document.querySelectorAll('#db-list-view > .tabs:first-child .tab-btn').forEach(b => b.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
+    document.getElementById('db-search').value = '';
+
+    const subTabsContainer = document.getElementById('db-sub-tabs');
+    if (tab === 'weapons') {
+        subTabsContainer.classList.remove('hidden');
+        subTabsContainer.innerHTML = '';
+        CATEGORIES.WEAPONS.forEach((cat, idx) => {
+            let btn = document.createElement('button');
+            btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
+            btn.innerText = cat.toUpperCase();
+            btn.onclick = () => {
+                document.querySelectorAll('#db-sub-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentDbSubTab = cat;
+                renderDbList();
+            };
+            subTabsContainer.appendChild(btn);
+        });
+        currentDbSubTab = CATEGORIES.WEAPONS[0];
+    } else {
+        subTabsContainer.classList.add('hidden');
+        currentDbSubTab = null;
+    }
+
+    renderDbList();
+}
 
         function getFlatDbList(type) {
-            if (type === 'weapons') {
-                let arr = [];
-                CATEGORIES.WEAPONS.forEach(cat => {
-                    if(db.weapons[cat]) arr = arr.concat(db.weapons[cat].map(i => ({...i, _sub: cat})));
-                });
-                return arr;
+        if (type === 'weapons') {
+            if (currentDbSubTab && db.weapons[currentDbSubTab]) {
+                return db.weapons[currentDbSubTab].map(i => ({...i, _sub: currentDbSubTab}));
             }
-            if (type === 'mantras') {
-                let arr = [];
-                CATEGORIES.ATTUNEMENTS.forEach(att => {
-                    if(db.mantras[att]) arr = arr.concat(db.mantras[att].map(i => ({...i, _att: att})));
-                });
-                return arr;
-            }
-            return db[type] || [];
+            return [];
         }
-
+        if (type === 'mantras') {
+            let arr = [];
+            CATEGORIES.ATTUNEMENTS.forEach(att => {
+                if(db.mantras[att]) arr = arr.concat(db.mantras[att].map(i => ({...i, _att: att})));
+            });
+            return arr;
+        }
+        return db[type] || [];
+}
         function renderDbList() {
             const listContainer = document.getElementById('db-list');
             listContainer.innerHTML = '';
@@ -223,7 +241,7 @@ function closeDB() {
                 const row = document.createElement('div');
                 row.className = 'db-row';
                 row.innerHTML = `
-                    <img src="${item.image || 'https://via.placeholder.com/40'}">
+                    <img src="${item.image || 'pics/question.png'}">
                     <div class="db-row-name">${item.name} <span class="db-row-cat">${catLabel}</span></div>
                     <div class="db-actions">
                         <button class="btn-edit" onclick="openDbForm('${currentDbTab}', '${item.id}')">Edit</button>
@@ -362,8 +380,6 @@ function openDbForm(type = currentDbTab, id = null) {
 
 // UTILITIES & CALCULATIONS
         function generateId() { return Math.random().toString(36).substr(2, 9); }
-
-        function updateBuildName(val) { currentBuild.name = val; }
         function hideStartScreen() {
     const screen = document.getElementById('start-screen');
     screen.classList.add('fade-out');
@@ -454,18 +470,13 @@ function closeStatsModal(e) {
 }
 // SIDEBAR RENDERING
         function renderSidebar() {
-    const nameInput = document.getElementById('build-name-input');
-    if (nameInput) nameInput.value = currentBuild.name;
-
-    const notesInput = document.getElementById('build-notes');
-    if (notesInput) notesInput.value = currentBuild.notes || "";
-
+    
     const renderSlot = (id, item, isCorrupt = false) => {
                 const container = document.getElementById(id);
                 if (!item) {
                     container.innerHTML = '<div class="slot-empty">Empty</div>';
                 } else {
-                    const imgSrc = item.image || `https://via.placeholder.com/60?text=${item.name.charAt(0)}`;
+                    const imgSrc = item.image || `pics/question.png`;
                     const corruptClass = isCorrupt ? 'corrupted-text' : '';
                     const corruptSuffix = isCorrupt ? ' (Corrupted)' : '';
                     container.innerHTML = `
@@ -483,7 +494,7 @@ renderSlot('sidebar-kit', currentBuild.kit);
     if (!currentBuild.weapon) wContainer.innerHTML = '<div class="slot-empty">Empty</div>';
     else {
         wContainer.innerHTML = `
-            <img src="${currentBuild.weapon.image || 'https://via.placeholder.com/60'}" class="slot-image">
+            <img src="${currentBuild.weapon.image || 'pics/question.png'}" class="slot-image">
             <div style="display:flex; flex-direction:column; justify-content:center;">
                 <div class="slot-text">${currentBuild.weapon.name}</div>
                 <div id="sidebar-weapon-m1" style="font-size:0.85rem; color: white; font-weight:bold; margin-top:2px;">M1 DMG: ${currentBuild.weapon.m1Dmg || 0}</div>
@@ -495,7 +506,7 @@ renderSlot('sidebar-kit', currentBuild.kit);
     const eContainer = document.getElementById('sidebar-enchant');
     if (!currentBuild.weaponEnchant) eContainer.innerHTML = '<div class="slot-empty">Empty</div>';
     else {
-        eContainer.innerHTML = `<img src="${currentBuild.weaponEnchant.image || 'https://via.placeholder.com/60'}" class="slot-image"><div class="slot-text" style="color:#ffffff;">${currentBuild.weaponEnchant.name}</div>`;
+        eContainer.innerHTML = `<img src="${currentBuild.weaponEnchant.image || 'pics/question.png'}" class="slot-image"><div class="slot-text" style="color:#ffffff;">${currentBuild.weaponEnchant.name}</div>`;
     }
 
     const bContainer = document.getElementById('sidebar-bell');
@@ -504,7 +515,7 @@ renderSlot('sidebar-kit', currentBuild.kit);
     if (!b) {
         bContainer.innerHTML = '<div class="slot-empty">Empty</div>';
     } else {
-        const imgSrc = b.image || `https://via.placeholder.com/60?text=${b.name.charAt(0)}`;
+        const imgSrc = b.image || `pics/question.png`;
 
         if (!b.canCorrupt) currentBuild.bellCorrupted = false; 
 
@@ -533,9 +544,8 @@ renderSlot('sidebar-kit', currentBuild.kit);
     } else {
         currentBuild.mantras.forEach((m) => {
             const isBonus = m.mantra.isBonus;
-            const imgSrc = m.mantra.image || `https://via.placeholder.com/60?text=${m.mantra.name.charAt(0)}`;
-            
-            // Add yellow styling if it's a bonus mantra
+            const imgSrc = m.mantra.image || `pics/question.png`;
+
             const extraClass = isBonus ? 'mantra-slot' : '';
             const textClass = isBonus ? 'slot-text' : 'slot-text';
             const nameLabel = m.mantra.name + (isBonus ? ' (Bonus)' : '');
@@ -685,7 +695,7 @@ function renderSelectionGrid() {
             card.style.border = '2px solid transparent'; 
         }
 
-        card.innerHTML = `<img src="${item.image || 'https://via.placeholder.com/80?text='+item.name.charAt(0)}"><div class="name">${item.name}</div>`;
+        card.innerHTML = `<img src="${item.image || 'pics/question.png'}"><div class="name">${item.name}</div>`;
         
         card.onclick = () => {
             selectItem(item); 
@@ -726,7 +736,7 @@ function showDetails(item) {
     }
 
     document.getElementById('detail-content').innerHTML = `
-        <img class="detail-img" src="${item.image || 'https://via.placeholder.com/120?text=No+Img'}">
+        <img class="detail-img" src="${item.image || 'pics/question.png'}">
         <div class="detail-name">${item.name}</div>
         <div class="detail-desc">${formattedDesc}</div>
         ${gemHtml}
@@ -782,7 +792,7 @@ function selectItem(item, isCorrupted = false) {
                 }
             } else {
                 if (normalCount >= 2) {
-                    alert('You can only pick 2 regular mantras maximum!');
+                    alert('You can only pick 2 mantras (3rd must be a 3 star Mantra)!');
                 } else {
                     currentBuild.mantras.push({ mantra: {...item, _att: currentSelectionTab}, gem: null });
                 }
@@ -887,18 +897,56 @@ function setMantraGem(mantraId, gemName) {
         
 
 // BUILD ACTIONS (Share, Clear, Random)
-       function pickRandom(arr) { return (!arr || arr.length === 0) ? null : arr[Math.floor(Math.random() * arr.length)]; }
+    function pickRandom(arr) { return (!arr || arr.length === 0) ? null : arr[Math.floor(Math.random() * arr.length)]; }
+    
+    function shareBuild() {
+    let text = [];
 
+    text.push(`Kit: ${currentBuild.kit ? currentBuild.kit.name : "None"}`);
+    text.push(`Oath: ${currentBuild.oath ? currentBuild.oath.name : "None"}`);
+    
+    let weaponStr = `Weapon: ${currentBuild.weapon ? currentBuild.weapon.name : "None"}`;
+    if (currentBuild.weaponEnchant) weaponStr += ` (Enchant: ${currentBuild.weaponEnchant.name})`;
+    text.push(weaponStr);
+
+    let bellStr = `Bell: ${currentBuild.bell ? currentBuild.bell.name : "None"}`;
+    if (currentBuild.bell && currentBuild.bellCorrupted) bellStr += ` [Corrupted]`;
+    text.push(bellStr);
+
+    if (currentBuild.mantras.length > 0) {
+        text.push(`Mantras:`);
+        currentBuild.mantras.forEach(m => {
+            let mStr = `- ${m.mantra.name}`;
+            if (m.mantra.isBonus) mStr += ` (Bonus)`;
+            if (m.gem) mStr += ` [${m.gem} Gem]`;
+            text.push(mStr);
+        });
+    } else {
+        text.push(`Mantras: None`);
+    }
+
+    const shareText = text.join('\n');
+
+    navigator.clipboard.writeText(shareText).then(() => {
+        alert("Build copied to clipboard!");
+    }).catch(() => {
+        prompt("Copy your build:", shareText);
+    });
+}
    function randomizeBuild() {
     currentBuild.kit = pickRandom(db.kits);
     currentBuild.oath = pickRandom(db.oaths);
     currentBuild.bell = pickRandom(db.bells);
     currentBuild.bellCorrupted = Math.random() > 0.5;
     
-    // Fix: Exclude 'enchants' from the main weapon pool
-    const mainWeaponCats = CATEGORIES.WEAPONS.filter(c => c !== 'enchants');
-    const randomWeaponCat = pickRandom(mainWeaponCats);
-    currentBuild.weapon = pickRandom(db.weapons[randomWeaponCat]);
+    const validWeaponCats = ['heavy', 'medium', 'light'].filter(cat => db.weapons[cat] && db.weapons[cat].length > 0);
+
+    if (validWeaponCats.length > 0) {
+        const randomWeaponCat = pickRandom(validWeaponCats);
+        currentBuild.weapon = pickRandom(db.weapons[randomWeaponCat]);
+    } else {
+        currentBuild.weapon = null; 
+    }
 
     // Pick Enchant separately
     currentBuild.weaponEnchant = pickRandom(db.weapons.enchants);
@@ -925,12 +973,10 @@ function setMantraGem(mantraId, gemName) {
         }
     }
 
-    // Step 2: Roll for Bonus Mantra (ONLY if we successfully got 2 of the SAME attunement)
+    // Step 2: Roll for Bonus Mantra 
     if (chosenRegulars.length === 2 && chosenRegulars[0]._att === chosenRegulars[1]._att) {
         const sharedAtt = chosenRegulars[0]._att;
         const availableBonus = db.mantras[sharedAtt].filter(m => m.isBonus);
-        
-        // Give it a 50% chance to equip the bonus mantra if it exists
         if (availableBonus.length > 0 && Math.random() > 0.5) { 
             const b = pickRandom(availableBonus);
             currentBuild.mantras.push({
@@ -947,7 +993,6 @@ function setMantraGem(mantraId, gemName) {
     if(confirm("Are you sure you want to clear your current build?")) {
         // Reset everything
         currentBuild = { 
-            name: "New Build", 
             kit: null, 
             oath: null, 
             weapon: null, 

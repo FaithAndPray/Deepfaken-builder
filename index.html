@@ -14,8 +14,6 @@
     <img src="pics/Deepfaken.png" alt="Deepfaken">
     <div class="start-text">
         <center>  - click to start -  </center>
-        <br>
-        dont zoom in the website to not break shit
     </div>
 </div>
 
@@ -44,7 +42,6 @@
 
 
     <div id="sidebar">
-    <input type="text" id="build-name-input" placeholder="Build Name Here" value="New Build" onchange="updateBuildName(this.value)">
     
     <div id="sidebar-slots-wrapper">
         <div class="build-slot" id="slot-kit" onclick="openSelectionModal('kits')">
@@ -135,11 +132,8 @@
 
     <!-- Database Modal -->
     <div id="db-modal" class="modal-overlay">
-        <div class="glass-panel modal-container db-modal-content">
-            <div class="db-header">
-                <h2>Database Manager</h2>
-                <button class="modal-close" onclick="closeDB()">&times;</button>
-            </div>
+        <div class="glass-panel modal-container db-modal-content" style="position: relative;">
+        <button class="modal-close abs-close" onclick="closeDB()">&times;</button>
             <div class="db-body">
                 <div id="db-list-view">
                     <div class="tabs" style="margin-bottom: 25px;">
@@ -149,6 +143,7 @@
                         <button class="tab-btn" onclick="switchDbTab('weapons', this)">Weapons</button>
                         <button class="tab-btn" onclick="switchDbTab('mantras', this)">Mantras</button>
                     </div>
+                    <div id="db-sub-tabs" class="tabs hidden" style="margin-bottom: 15px;"></div>
                     <input type="text" id="db-search" class="search-bar" placeholder="Search database..." oninput="renderDbList()">
                     <div id="db-list" class="db-grid"></div>
                     <div style="display:flex; gap:10px; margin-top:20px;">
