@@ -5,9 +5,9 @@
             --glass-bg: rgba(15, 20, 25, 0.65);
             --text-main: #f0f0f0;
             --text-muted: #999;
-            --danger: #ff4757;
-            --corrupted: #b33939;
-            --corrupted-glow: #e056fd;
+            --danger: #ff475690;
+            --corrupted: #b3393984;
+            --corrupted-glow: #e156fd8d;
         }
 
         * {
@@ -257,7 +257,7 @@
         .slot-text { font-weight: 600; font-size: 1.1rem; color: white; }
         .slot-empty { color: #013930d9;; font-style: italic;  font-weight: normal; font-size: 1rem; }
 
-        .corrupted-text { color: var(--corrupted-glow); text-shadow: 0 0 10px rgba(224, 86, 253, 0.6); }
+        .corrupted-text { color: var(--corrupted-glow);}
 
         .mantra-list { display: flex; flex-direction: column; gap: 10px; }
         .mantra-slot {
