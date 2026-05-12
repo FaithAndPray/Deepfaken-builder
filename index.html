@@ -189,14 +189,22 @@
         <div class="form-group" style="flex: 1;"><label>Speed Buff (%)</label><input type="number" id="db-form-speedbuff" value="0"></div>
     </div>
 
-    <div class="form-group" style="margin-top: 10px;">
-        <label>Stat/Buff Details (Explain what buffs/debuffs you)</label>
-        <textarea id="db-form-stat-details" rows="2" placeholder="e.g., +10% DMG when below 50% HP..."></textarea>
+    
+
+    <div class="form-group" style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+        <label>other buffs</label>
+        <div id="db-form-extra-buffs" style="display:flex; flex-direction:column; gap:10px;"></div>
+        <button type="button" class="btn-secondary" style="padding: 8px; font-size: 0.8rem; margin-top: 10px;" onclick="addExtraBuffRow()">add buff</button>
     </div>
     
-    <div class="form-group" id="db-form-weapon-container" style="display:none;">
+    <div class="form-group" id="db-form-weapon-container" style="display:none; flex-direction: column; gap: 10px;">
         <label>Weapon M1 Dmg</label>
         <input type="number" id="db-form-m1dmg" value="0">
+    </div>
+    <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
+            <input type="checkbox" id="db-form-nonenchantable" style="width: auto;">
+            <label>Is this a non-enchantable weapon?</label>
+        </div>
     </div>
 
     <div class="form-group" id="db-form-mantra-container" style="display:none; flex-direction: row; align-items: center; gap: 10px;">

@@ -271,10 +271,30 @@ async function openDB() {
     const type = editingItemType;
     const cat = document.getElementById('db-form-cat').value;
     
-    document.getElementById('db-form-stats-container').style.display = (type === 'kits' || type === 'oaths' || type === 'weapons' || type === 'bells') ? 'flex' : 'none';
+   document.getElementById('db-form-stats-container').style.display = (type === 'kits' || type === 'oaths' || type === 'weapons' || type === 'bells' || type === 'mantras') ? 'flex' : 'none';
     document.getElementById('db-form-weapon-container').style.display = (type === 'weapons' && cat !== 'enchants') ? 'flex' : 'none';
     document.getElementById('db-form-mantra-container').style.display = (type === 'mantras') ? 'flex' : 'none';
     document.getElementById('db-form-bell-container').style.display = (type === 'bells') ? 'flex' : 'none';
+}
+
+function addExtraBuffRow(buff = {name:'', hp:0, posture:0, dmgBuff:0, dmgResis:0, speedBuff:0}) {
+    const container = document.getElementById('db-form-extra-buffs');
+    const row = document.createElement('div');
+    row.style.cssText = "display:flex; flex-direction:column; gap:10px; background:rgba(0,0,0,0.4); padding:15px; border-radius:8px; border: 1px solid rgba(255,255,255,0.05);";
+    row.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <input type="text" class="eb-name" placeholder="buff name" value="${buff.name}" style="flex: 1; margin-right: 15px; font-weight: bold; background: rgba(0,0,0,0.8);">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" style="background:var(--danger); color:white; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight: bold;">X</button>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">HP</label><input type="number" class="eb-hp" value="${buff.hp || 0}" style="margin-top:4px;"></div>
+            <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">Posture</label><input type="number" class="eb-posture" value="${buff.posture || 0}" style="margin-top:4px;"></div>
+            <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">DMG Buff %</label><input type="number" class="eb-dmgBuff" value="${buff.dmgBuff || 0}" style="margin-top:4px;"></div>
+            <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">Resis %</label><input type="number" class="eb-dmgResis" value="${buff.dmgResis || 0}" style="margin-top:4px;"></div>
+            <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">Speed %</label><input type="number" class="eb-speedBuff" value="${buff.speedBuff || 0}" style="margin-top:4px;"></div>
+        </div>
+    `;
+    container.appendChild(row);
 }
 function openDbForm(type = currentDbTab, id = null) {
     editingItemType = type;
@@ -291,7 +311,7 @@ function openDbForm(type = currentDbTab, id = null) {
     document.getElementById('db-form-name').value = item ? item.name : '';
     document.getElementById('db-form-image').value = item ? (item.image||'') : '';
     document.getElementById('db-form-desc').value = item ? (item.description||'') : '';
-    document.getElementById('db-form-stat-details').value = item?.statDetails || '';
+    
     
     // Set Stats
     document.getElementById('db-form-hp').value = item?.hp || 0;
@@ -299,9 +319,15 @@ function openDbForm(type = currentDbTab, id = null) {
     document.getElementById('db-form-dmgbuff').value = item?.dmgBuff || 0;
     document.getElementById('db-form-dmgresis').value = item?.dmgResis || 0;
     document.getElementById('db-form-speedbuff').value = item?.speedBuff || 0;
+    const ebContainer = document.getElementById('db-form-extra-buffs');
+    ebContainer.innerHTML = '';
+    if (item && item.extraBuffs) {
+        item.extraBuffs.forEach(b => addExtraBuffRow(b));
+    }
     
     // Set Checkboxes & Specifics
     document.getElementById('db-form-m1dmg').value = item?.m1Dmg || 0;
+    document.getElementById('db-form-nonenchantable').checked = item?.isNonEnchantable || false;
     document.getElementById('db-form-isbonus').checked = item?.isBonus || false;
     document.getElementById('db-form-cancorrupt').checked = item?.canCorrupt || false;
 
@@ -338,23 +364,30 @@ function openDbForm(type = currentDbTab, id = null) {
     const name = document.getElementById('db-form-name').value.trim();
     if(!name) return alert('Name is required');
     
-    // Assemble the item with all possible fields correctly
+    const extraBuffs = Array.from(document.getElementById('db-form-extra-buffs').children).map(row => ({
+        name: row.querySelector('.eb-name').value.trim(),
+        hp: parseFloat(row.querySelector('.eb-hp').value) || 0,
+        posture: parseFloat(row.querySelector('.eb-posture').value) || 0,
+        dmgBuff: parseFloat(row.querySelector('.eb-dmgBuff').value) || 0,
+        dmgResis: parseFloat(row.querySelector('.eb-dmgResis').value) || 0,
+        speedBuff: parseFloat(row.querySelector('.eb-speedBuff').value) || 0
+    })).filter(b => b.name !== "");
+
     const item = {
         id: editingItemId,
         name: name,
         image: document.getElementById('db-form-image').value.trim(),
         description: document.getElementById('db-form-desc').value.trim(),
-        
-        // Save Specific Stats
         hp: parseFloat(document.getElementById('db-form-hp').value) || 0,
         posture: parseFloat(document.getElementById('db-form-posture').value) || 0,
         dmgBuff: parseFloat(document.getElementById('db-form-dmgbuff').value) || 0,
         dmgResis: parseFloat(document.getElementById('db-form-dmgresis').value) || 0,
         speedBuff: parseFloat(document.getElementById('db-form-speedbuff').value) || 0,
+        extraBuffs: extraBuffs,
         m1Dmg: parseFloat(document.getElementById('db-form-m1dmg').value) || 0,
         isBonus: document.getElementById('db-form-isbonus').checked,
         canCorrupt: document.getElementById('db-form-cancorrupt').checked,
-        statDetails: document.getElementById('db-form-stat-details').value.trim()
+        isNonEnchantable: document.getElementById('db-form-nonenchantable').checked
     };
     
     const cat = document.getElementById('db-form-cat').value;
@@ -401,26 +434,23 @@ function calculateStats() {
         { id: 'Bell', item: currentBuild.bell }
     ];
 
-    slots.forEach(slot => {
-        if (slot.item && !currentBuild.disabledBuffs[slot.id]) {
-            totalHp += (slot.item.hp || 0);
-            posture += (slot.item.posture || 0);
-            rawDmgBuffs += (slot.item.dmgBuff || 0);
-            dmgResis += (slot.item.dmgResis || 0);
-            speedBuffs += (slot.item.speedBuff || 0);
+    const applyStats = (i, slotId) => {
+        if (!currentBuild.disabledBuffs[slotId]) {
+            totalHp += (i.hp || 0); posture += (i.posture || 0);
+            rawDmgBuffs += (i.dmgBuff || 0); dmgResis += (i.dmgResis || 0); speedBuffs += (i.speedBuff || 0);
         }
-    });
+        if (i.extraBuffs) {
+            i.extraBuffs.forEach((b, idx) => {
+                if (!currentBuild.disabledBuffs[`${slotId}_eb_${idx}`]) {
+                    totalHp += (b.hp || 0); posture += (b.posture || 0);
+                    rawDmgBuffs += (b.dmgBuff || 0); dmgResis += (b.dmgResis || 0); speedBuffs += (b.speedBuff || 0);
+                }
+            });
+        }
+    };
 
-    currentBuild.mantras.forEach((m, idx) => {
-        const mId = 'Mantra_' + idx;
-        if (m.mantra && !currentBuild.disabledBuffs[mId]) {
-            totalHp += (m.mantra.hp || 0);
-            posture += (m.mantra.posture || 0);
-            rawDmgBuffs += (m.mantra.dmgBuff || 0);
-            dmgResis += (m.mantra.dmgResis || 0);
-            speedBuffs += (m.mantra.speedBuff || 0);
-        }
-    });
+    slots.forEach(slot => { if (slot.item) applyStats(slot.item, slot.id); });
+    currentBuild.mantras.forEach((m, idx) => { if (m.mantra) applyStats(m.mantra, 'Mantra_' + idx); });
 
     let effectiveDmgBuffs = rawDmgBuffs;
     let halvedAmount = 0;
@@ -488,7 +518,7 @@ function openStatsModal() {
         if (!entry.item) return;
         const i = entry.item;
         
-        if (!i.hp && !i.posture && !i.dmgBuff && !i.dmgResis && !i.speedBuff && !i.statDetails) return;
+        if (!i.hp && !i.posture && !i.dmgBuff && !i.dmgResis && !i.speedBuff && (!i.extraBuffs || i.extraBuffs.length === 0)) return;
         hasItems = true;
 
         let statsArr = [];
@@ -500,21 +530,52 @@ function openStatsModal() {
 
         const isChecked = !currentBuild.disabledBuffs[entry.id];
 
-        html += `
-            <div style="background: rgba(0,0,0,0.6); padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; opacity: ${isChecked ? '1' : '0.4'}; transition: 0.2s;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <div style="font-weight: 800; font-size: 1.2rem; color: #fff;">
-                        <span style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin-right: 10px;">[${entry.type}]</span>${i.name}
+        let extraBuffsHtml = '';
+        if (i.extraBuffs && i.extraBuffs.length > 0) {
+            i.extraBuffs.forEach((b, ebIdx) => {
+                const ebId = `${entry.id}_eb_${ebIdx}`;
+                const ebChecked = !currentBuild.disabledBuffs[ebId];
+                
+                let ebStats = [];
+                if (b.hp) ebStats.push(`HP: ${b.hp > 0 ? '+'+b.hp : b.hp}`);
+                if (b.posture) ebStats.push(`Posture: ${b.posture > 0 ? '+'+b.posture : b.posture}`);
+                if (b.dmgBuff) ebStats.push(`DMG%: ${b.dmgBuff > 0 ? '+'+b.dmgBuff : b.dmgBuff}%`);
+                if (b.dmgResis) ebStats.push(`Resis: ${b.dmgResis > 0 ? '+'+b.dmgResis : b.dmgResis}%`);
+                if (b.speedBuff) ebStats.push(`Spd: ${b.speedBuff > 0 ? '+'+b.speedBuff : b.speedBuff}%`);
+
+                extraBuffsHtml += `
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 6px; border: 1px rgba(255,255,255,0.2); opacity: ${ebChecked ? '1' : '0.4'}; transition: 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-size: 0.95rem; color: white; font-weight: bold;">${b.name}</span>
+                            <label style="cursor: pointer; font-size: 0.8rem; color: #aaa; display:flex; align-items:center; gap:5px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">
+                                <input type="checkbox" onchange="toggleBuffStatus('${ebId}')" ${ebChecked ? 'checked' : ''} style="width:14px; height:14px; margin:0;"> Enable
+                            </label>
+                        </div>
+                        <div style="color: var(--secondary); font-size: 0.85rem; font-weight: bold;">
+                            ${ebStats.join(' | ')}
+                        </div>
                     </div>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: #aaa; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px;">
-                        <input type="checkbox" onchange="toggleBuffStatus('${entry.id}')" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; margin:0;">
-                        Enable Buffs
-                    </label>
+                `;
+            });
+        }
+
+        html += `
+            <div style="background: rgba(0,0,0,0.6); padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; transition: 0.2s;">
+                <div style="opacity: ${isChecked ? '1' : '0.4'}; transition: 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div style="font-weight: 800; font-size: 1.2rem; color: #fff;">
+                            <span style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin-right: 10px;">[${entry.type}]</span>${i.name}
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: #aaa; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px;">
+                            <input type="checkbox" onchange="toggleBuffStatus('${entry.id}')" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; margin:0;">
+                            Base Buffs
+                        </label>
+                    </div>
+                    <div style="color: var(--secondary); font-size: 0.9rem; font-weight: bold;">
+                        ${statsArr.length > 0 ? statsArr.join(' &nbsp;|&nbsp; ') : 'No Base Stats'}
+                    </div>
                 </div>
-                <div style="color: var(--secondary); font-size: 0.9rem; font-weight: bold; margin-bottom: ${i.statDetails ? '8px' : '0'};">
-                    ${statsArr.join(' &nbsp;|&nbsp; ')}
-                </div>
-                ${i.statDetails ? `<div style="color: #ccc; font-size: 0.95rem; white-space: pre-wrap; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px;">${i.statDetails}</div>` : ''}
+                ${extraBuffsHtml}
             </div>
         `;
     });
@@ -816,8 +877,17 @@ function selectItem(item, isCorrupted = false) {
     if (currentSelectionType === 'kits') currentBuild.kit = item;
     else if (currentSelectionType === 'oaths') currentBuild.oath = item;
     else if (currentSelectionType === 'weapons') {
-        if (currentSelectionTab === 'enchants') currentBuild.weaponEnchant = item;
-        else currentBuild.weapon = item;
+        if (currentSelectionTab === 'enchants') {
+            if (currentBuild.weapon && currentBuild.weapon.isNonEnchantable) {
+                return alert("Your equipped weapon cannot be enchanted.");
+            }
+            currentBuild.weaponEnchant = item;
+        } else {
+            currentBuild.weapon = item;
+            if (item.isNonEnchantable) {
+                currentBuild.weaponEnchant = null;
+            }
+        }
     }
     else if (currentSelectionType === 'bells') {
         currentBuild.bell = item;
@@ -1018,11 +1088,11 @@ function setMantraGem(mantraId, gemName) {
     }
 
     // Pick Enchant separately
-    currentBuild.weaponEnchant = pickRandom(db.weapons.enchants);
-
-    currentBuild.mantras = [];
-    const allAtts = CATEGORIES.ATTUNEMENTS;
-    let chosenRegulars = [];
+    if (currentBuild.weapon && currentBuild.weapon.isNonEnchantable) {
+        currentBuild.weaponEnchant = null;
+    } else {
+        currentBuild.weaponEnchant = pickRandom(db.weapons.enchants);
+    }
     
     // Step 1: Pick 2 Random Regular Mantras
     for(let i = 0; i < 2; i++) {
@@ -1137,4 +1207,11 @@ function importDatabase() {
 // GLOBAL EVENT LISTENERS
 document.getElementById('modal-search').addEventListener('input', renderSelectionGrid);
 window.addEventListener('click', closeCtx);
- 
+document.querySelectorAll('.tabs').forEach(tabContainer => {
+    tabContainer.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            tabContainer.scrollLeft += e.deltaY;
+        }
+    });
+});
