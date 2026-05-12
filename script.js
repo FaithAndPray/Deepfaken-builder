@@ -451,6 +451,10 @@ function calculateStats() {
 
     slots.forEach(slot => { if (slot.item) applyStats(slot.item, slot.id); });
     currentBuild.mantras.forEach((m, idx) => { if (m.mantra) applyStats(m.mantra, 'Mantra_' + idx); });
+    if (currentBuild.kit && currentBuild.kit.name.toLowerCase().includes('Idiot')) {
+        rawDmgBuffs = 0;
+        dmgResis = 0;
+    }
 
     let effectiveDmgBuffs = rawDmgBuffs;
     let halvedAmount = 0;
