@@ -387,56 +387,109 @@ function openDbForm(type = currentDbTab, id = null) {
         screen.style.display = 'none';
     }, 500); 
 }
+
 function calculateStats() {
-    let totalHp = 300, posture = 30, dmgBuffs = 0, dmgResis = 0, speedBuffs = 0;
+    if (!currentBuild.disabledBuffs) currentBuild.disabledBuffs = {};
+    
+    let totalHp = 300, posture = 30, rawDmgBuffs = 0, dmgResis = 0, speedBuffs = 0;
 
-    const allEquipped = [currentBuild.kit, currentBuild.oath, currentBuild.weapon, currentBuild.weaponEnchant, currentBuild.bell].filter(item => item);
+    const slots = [
+        { id: 'Kit', item: currentBuild.kit },
+        { id: 'Oath', item: currentBuild.oath },
+        { id: 'Weapon', item: currentBuild.weapon },
+        { id: 'Enchant', item: currentBuild.weaponEnchant },
+        { id: 'Bell', item: currentBuild.bell }
+    ];
 
-    allEquipped.forEach(item => {
-        totalHp += (item.hp || 0);
-        posture += (item.posture || 0);
-        dmgBuffs += (item.dmgBuff || 0);
-        dmgResis += (item.dmgResis || 0);
-        speedBuffs += (item.speedBuff || 0);
+    slots.forEach(slot => {
+        if (slot.item && !currentBuild.disabledBuffs[slot.id]) {
+            totalHp += (slot.item.hp || 0);
+            posture += (slot.item.posture || 0);
+            rawDmgBuffs += (slot.item.dmgBuff || 0);
+            dmgResis += (slot.item.dmgResis || 0);
+            speedBuffs += (slot.item.speedBuff || 0);
+        }
     });
+
+    currentBuild.mantras.forEach((m, idx) => {
+        const mId = 'Mantra_' + idx;
+        if (m.mantra && !currentBuild.disabledBuffs[mId]) {
+            totalHp += (m.mantra.hp || 0);
+            posture += (m.mantra.posture || 0);
+            rawDmgBuffs += (m.mantra.dmgBuff || 0);
+            dmgResis += (m.mantra.dmgResis || 0);
+            speedBuffs += (m.mantra.speedBuff || 0);
+        }
+    });
+
+    let effectiveDmgBuffs = rawDmgBuffs;
+    let halvedAmount = 0;
+    if (rawDmgBuffs > 25) {
+        halvedAmount = rawDmgBuffs - 25;
+        effectiveDmgBuffs = 25 + (halvedAmount / 2);
+    }
 
     document.getElementById('stat-hp').innerText = totalHp;
     document.getElementById('stat-posture').innerText = posture;
-    document.getElementById('stat-dmg-buffs').innerText = dmgBuffs + '%';
+    
+    const dmgBuffEl = document.getElementById('stat-dmg-buffs');
+    if (halvedAmount > 0) {
+        dmgBuffEl.innerHTML = `${effectiveDmgBuffs}%`;
+    } else {
+        dmgBuffEl.innerText = effectiveDmgBuffs + '%';
+    }
+
     document.getElementById('stat-dmg-resis').innerText = dmgResis + '%';
     document.getElementById('stat-speed-buffs').innerText = speedBuffs + '%';
 
-    
     const m1Text = document.getElementById('sidebar-weapon-m1');
     if (m1Text && currentBuild.weapon) {
         const baseM1 = currentBuild.weapon.m1Dmg || 0;
-        
-        
-        const finalM1 = baseM1 * (1 + (dmgBuffs / 100));
+        const finalM1 = baseM1 * (1 + (effectiveDmgBuffs / 100));
         m1Text.innerText = `M1 DMG: ${parseFloat(finalM1.toFixed(1))}`;
     }
+
+    return { rawDmgBuffs, effectiveDmgBuffs, halvedAmount };
 }
+
 function openStatsModal() {
+    if (!currentBuild.disabledBuffs) currentBuild.disabledBuffs = {};
     const content = document.getElementById('stats-detail-content');
     content.innerHTML = '';
 
-    // Gather all equipped items including mantras
-    let equipped = [
-        { type: 'Kit', item: currentBuild.kit },
-        { type: 'Oath', item: currentBuild.oath },
-        { type: 'Weapon', item: currentBuild.weapon },
-        { type: 'Enchant', item: currentBuild.weaponEnchant },
-        { type: 'Bell', item: currentBuild.bell }
-    ];
-    currentBuild.mantras.forEach(m => equipped.push({ type: 'Mantra', item: m.mantra }));
+    const statsMath = calculateStats();
 
-    let html = '';
+    let topHtml = '';
+    if (statsMath.halvedAmount > 0) {
+        topHtml = `
+            <div style="background: rgba(0, 0, 0, 0.24); border: 1px solid white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div style="color: white; font-weight: 800; margin-bottom: 6px; font-size: 1.1rem; text-transform: uppercase;">you hit the dmg softcap</div>
+                <div style="font-size: 0.95rem; color: #ddd; line-height: 1.5;">
+                    raw dmg bSuffs: <strong style="color:white;">${statsMath.rawDmgBuffs}%</strong><br>
+                    real dmg buffs: <strong style="color:white;">${statsMath.effectiveDmgBuffs}%</strong>
+                </div>
+            </div>
+        `;
+    }
+
+    let equipped = [
+        { type: 'Kit', id: 'Kit', item: currentBuild.kit },
+        { type: 'Oath', id: 'Oath', item: currentBuild.oath },
+        { type: 'Weapon', id: 'Weapon', item: currentBuild.weapon },
+        { type: 'Enchant', id: 'Enchant', item: currentBuild.weaponEnchant },
+        { type: 'Bell', id: 'Bell', item: currentBuild.bell }
+    ];
+    currentBuild.mantras.forEach((m, idx) => equipped.push({ type: 'Mantra', id: 'Mantra_' + idx, item: m.mantra }));
+
+    let html = topHtml;
+    let hasItems = false;
+
     equipped.forEach(entry => {
         if (!entry.item) return;
         const i = entry.item;
         
-        // Only show if it has stats or details
         if (!i.hp && !i.posture && !i.dmgBuff && !i.dmgResis && !i.speedBuff && !i.statDetails) return;
+        hasItems = true;
 
         let statsArr = [];
         if (i.hp) statsArr.push(`HP: ${i.hp > 0 ? '+'+i.hp : i.hp}`);
@@ -445,10 +498,18 @@ function openStatsModal() {
         if (i.dmgResis) statsArr.push(`Resis: ${i.dmgResis > 0 ? '+'+i.dmgResis : i.dmgResis}%`);
         if (i.speedBuff) statsArr.push(`Speed: ${i.speedBuff > 0 ? '+'+i.speedBuff : i.speedBuff}%`);
 
+        const isChecked = !currentBuild.disabledBuffs[entry.id];
+
         html += `
-            <div style="background: rgba(0,0,0,0.6); padding: 15px; border: 1px solid rgba(255,255,255,0.1);">
-                <div style="font-weight: 800; font-size: 1.2rem; color: #fff; margin-bottom: 5px;">
-                    <span style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin-right: 10px;">[${entry.type}]</span>${i.name}
+            <div style="background: rgba(0,0,0,0.6); padding: 15px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; opacity: ${isChecked ? '1' : '0.4'}; transition: 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <div style="font-weight: 800; font-size: 1.2rem; color: #fff;">
+                        <span style="color: #888; font-size: 0.8rem; text-transform: uppercase; margin-right: 10px;">[${entry.type}]</span>${i.name}
+                    </div>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; color: #aaa; background: rgba(0,0,0,0.4); padding: 4px 8px; border-radius: 6px;">
+                        <input type="checkbox" onchange="toggleBuffStatus('${entry.id}')" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; cursor: pointer; margin:0;">
+                        Enable Buffs
+                    </label>
                 </div>
                 <div style="color: var(--secondary); font-size: 0.9rem; font-weight: bold; margin-bottom: ${i.statDetails ? '8px' : '0'};">
                     ${statsArr.join(' &nbsp;|&nbsp; ')}
@@ -458,15 +519,23 @@ function openStatsModal() {
         `;
     });
 
-    if (html === '') html = '<div style="color:#888; text-align:center; padding: 20px;">No stat-altering items equipped.</div>';
-    content.innerHTML = html;
+    if (!hasItems && html === topHtml) html += '<div style="color:#888; text-align:center; padding: 20px;">No stat-altering items equipped.</div>';
     
+    content.innerHTML = html;
     document.getElementById('stats-modal').classList.add('active');
 }
 
 function closeStatsModal(e) {
     if (e) e.stopPropagation();
     document.getElementById('stats-modal').classList.remove('active');
+}
+
+function toggleBuffStatus(id) {
+    if (!currentBuild.disabledBuffs) currentBuild.disabledBuffs = {};
+    currentBuild.disabledBuffs[id] = !currentBuild.disabledBuffs[id];
+
+    calculateStats();
+    openStatsModal(); 
 }
 // SIDEBAR RENDERING
         function renderSidebar() {
@@ -1001,7 +1070,8 @@ function setMantraGem(mantraId, gemName) {
             bellCorrupted: false, 
             mantras: [], 
             notes: "", 
-            bonusMantraGem: null 
+            bonusMantraGem: null,
+            disabledBuffs: {}
         };
 
         const starterKit = db.kits.find(k => k.name.toLowerCase() === 'starter');
