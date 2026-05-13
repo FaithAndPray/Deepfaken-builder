@@ -727,61 +727,156 @@ function toggleCorrupt() {
 //  SELECTION MODAL
 function openSelectionModal(type, forceTab = null) {
     currentSelectionType = type;
+    
+    document.getElementById('standard-selection-body').classList.add('hidden');
+    document.getElementById('mantra-selection-body').classList.add('hidden');
+    document.getElementById('kit-selection-body').classList.add('hidden');
+    document.getElementById('oath-selection-body').classList.add('hidden'); // Hide new body
+    
+    const modalBody = document.querySelector('#selection-modal .modal-container');
+    modalBody.style.background = "transparent";
+
     if (type === 'mantras') {
-        document.getElementById('standard-selection-body').classList.add('hidden');
         document.getElementById('mantra-selection-body').classList.remove('hidden');
-        
-        const modalBody = document.querySelector('#selection-modal .modal-container');
         modalBody.style.background = "#111"; 
-        
         currentSelectionTab = forceTab || CATEGORIES.ATTUNEMENTS[0];
         mantraPendingGem = null; 
         mrSelectedTextDisplay = 'X';
         renderMantraUI();
+    } else if (type === 'kits') {
+        document.getElementById('kit-selection-body').classList.remove('hidden');
+        modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.8)"; 
+        previewedItem = currentBuild.kit || (db.kits.length > 0 ? db.kits[0] : null);
+        renderKitUI();
+    } else if (type === 'oaths') {
+        document.getElementById('oath-selection-body').classList.remove('hidden');
+        previewedItem = currentBuild.oath || null;
+        renderOathUI();
+    } else { // Standard view for weapons, bells, etc.
+        document.getElementById('standard-selection-body').classList.remove('hidden');
+        document.getElementById('modal-search').value = '';
+
+        const tabsContainer = document.getElementById('modal-tabs');
+        tabsContainer.innerHTML = '';
+
+        if (type === 'bells') {
+            modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+        } else {
+             modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
+        }
+
+        if (type === 'weapons') {
+            tabsContainer.classList.remove('hidden');
+            CATEGORIES.WEAPONS.forEach((cat, idx) => {
+                let btn = document.createElement('button');
+                btn.className = `tab-btn ${cat === (forceTab || 'heavy') ? 'active' : ''}`;
+                btn.innerText = cat.toUpperCase();
+                btn.onclick = () => {
+                    document.querySelectorAll('#modal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentSelectionTab = cat;
+                    renderSelectionGrid();
+                };
+                tabsContainer.appendChild(btn);
+            });
+            currentSelectionTab = forceTab || 'heavy';
+        } else {
+            tabsContainer.classList.add('hidden');
+            currentSelectionTab = null;
+        }
         
-        document.getElementById('selection-modal').classList.add('active');
+        renderSelectionGrid();
+    }
+    
+    document.getElementById('selection-modal').classList.add('active');
+}
+
+function renderOathUI() {
+    const grid = document.getElementById('oath-grid');
+    grid.innerHTML = '';
+    
+    db.oaths.forEach(oath => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'oath-item';
+        if (previewedItem && previewedItem.id === oath.id) {
+            itemDiv.classList.add('selected');
+        }
+        itemDiv.innerHTML = `<img src="${oath.image || 'pics/question.png'}">`;
+        itemDiv.onclick = () => {
+            previewedItem = oath;
+            renderOathUI();
+        };
+        grid.appendChild(itemDiv);
+    });
+
+    document.getElementById('oath-selected-text').innerText = `Selected: ${previewedItem ? previewedItem.name : 'None!'}`;
+    document.getElementById('oath-req-text').innerText = `req: ${previewedItem && previewedItem.description ? previewedItem.description : 'None!'}`;
+    document.getElementById('oath-equip-btn').onclick = () => equipOath();
+}
+
+function equipOath() {
+    if (!previewedItem) {
+        alert("Please select an Oath first!");
         return;
     }
+    currentBuild.oath = previewedItem;
+    renderSidebar();
+    closeSelectionModal();
+}
 
-    document.getElementById('standard-selection-body').classList.remove('hidden');
-    document.getElementById('mantra-selection-body').classList.add('hidden');
-    document.getElementById('modal-search').value = '';
+function renderKitUI() {
+    const listContainer = document.getElementById('kit-list-container');
+    const detailContainer = document.getElementById('kit-detail-container');
 
-    const tabsContainer = document.getElementById('modal-tabs');
-    tabsContainer.innerHTML = '';
+    const exactOrder = [
+        "Starter", "Idiot",
+        "Brute", "Charming Individual",
+        "Glass Cannon", "Pyromaniac",
+        "John cruelty", "Sorcerer",
+        "Raig", "Harlequin",
+        "strongman", "Silly Billy",
+        "Vampire", "Delusional",
+        "Yakuza Member", "Bulwark",
+        "Morality", "Boxer"
+    ];
 
-    const modalBody = document.querySelector('#selection-modal .modal-body-split');
+    let sortedKits = [...db.kits].sort((a, b) => {
+        let indexA = exactOrder.findIndex(k => k.toLowerCase() === a.name.toLowerCase());
+        let indexB = exactOrder.findIndex(k => k.toLowerCase() === b.name.toLowerCase());
+        if (indexA === -1) indexA = 999;
+        if (indexB === -1) indexB = 999;
+        return indexA - indexB;
+    });
     
-    switch(type) {
-        case 'bells': modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)"; break;
-        case 'weapons':
-        case 'oaths':
-        case 'kits': modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)"; break;
-        default: modalBody.style.background = "rgba(15, 20, 25, 0.65)"; break;
-    }
+    listContainer.innerHTML = '';
+    sortedKits.forEach(kit => {
+        let btn = document.createElement('div');
+        btn.className = `kit-list-btn ${previewedItem?.id === kit.id ? 'active' : ''}`;
+        btn.innerText = kit.name;
+        btn.onclick = () => {
+            previewedItem = kit;
+            renderKitUI();
+        };
+        listContainer.appendChild(btn);
+    });
 
-    if (type === 'weapons') {
-        tabsContainer.classList.remove('hidden');
-        CATEGORIES.WEAPONS.forEach((cat, idx) => {
-            let btn = document.createElement('button');
-            btn.className = `tab-btn ${cat === (forceTab || 'heavy') ? 'active' : ''}`;
-            btn.innerText = cat.toUpperCase();
-            btn.onclick = () => {
-                document.querySelectorAll('#modal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentSelectionTab = cat;
-                renderSelectionGrid();
-            };
-            tabsContainer.appendChild(btn);
-        });
-        currentSelectionTab = forceTab || 'heavy';
+    if (previewedItem) {
+        detailContainer.innerHTML = `
+            <img src="${previewedItem.image || 'pics/question.png'}" class="kit-detail-img">
+            <button class="kit-select-btn" onclick="equipKit('${previewedItem.id}')">select kit</button>
+        `;
     } else {
-        tabsContainer.classList.add('hidden');
-        currentSelectionTab = null;
+        detailContainer.innerHTML = '';
     }
-    
-    renderSelectionGrid();
-    document.getElementById('selection-modal').classList.add('active');
+}
+
+function equipKit(id) {
+    const kit = db.kits.find(k => k.id === id);
+    if (kit) {
+        currentBuild.kit = kit;
+        renderSidebar();
+        closeSelectionModal();
+    }
 }
 
         function closeSelectionModal() {
