@@ -112,13 +112,15 @@
     </div>
     <!-- Selection Modal -->
 <div id="selection-modal" class="modal-overlay">
-    <div class="modal-container selection-container">
-        <button class="modal-close abs-close" onclick="closeSelectionModal()">&times;</button>
-        <div class="modal-body-split sharp-edges">
+    <div class="modal-container selection-container" style="background: transparent;">
+        <button class="modal-close abs-close" onclick="closeSelectionModal()" style="z-index: 9999;">&times;</button>
+        
+        <!-- STANDARD VIEW (Weapons, Bells, Oaths, Kits) -->
+        <div id="standard-selection-body" class="modal-body-split sharp-edges">
             <div class="modal-left">
                 <div class="search-bar-container">
                     <input type="text" id="modal-search" class="search-bar" placeholder="Search items...">
-                    <div id="modal-mantra-tracker" style="display:none; margin-top:12px; background:rgba(0,0,0,0.6); padding:10px; border-radius:0;"></div>
+                    <div id="modal-mantra-tracker" style="display:none;"></div>
                 </div>
                 <div id="modal-tabs" class="tabs hidden"></div>
                 <div id="item-grid" class="item-grid"></div>
@@ -127,7 +129,13 @@
                 <div id="detail-content">Select an item to see details.</div>
             </div>
         </div>
+
+        <!-- MANTRA VIEW -->
+        <div id="mantra-selection-body" class="hidden mantra-rework-wrapper">
+            <!-- Rendered completely by Javascript -->
+        </div>
     </div>
+</div>
 </div>
 
     <!-- Database Modal -->

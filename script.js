@@ -6,6 +6,32 @@
             ATTUNEMENTS: ['Lifeweave', 'Ironsing', 'Flamecharm', 'Thundercall', 'Galebreathe', 'Frostdraw', 'Shadowcast', 'lightkeep', 'ballplay', 'Attunementless']
         };
         const GEMS = ['bloodless', 'wind', 'blue', 'insignia', 'wayward', 'blessed', 'aegis'];
+        const ATTUNEMENT_ICONS = {
+    'Lifeweave': 'pics/Lifeweave.png',
+    'Ironsing': 'pics/Ironsing.png',
+    'Flamecharm': 'pics/Flamecharm.png',
+    'Thundercall': 'pics/Thundercall.png',
+    'Galebreathe': 'pics/Galebreathe.png',
+    'Frostdraw': 'pics/Frostdraw.png',
+    'Shadowcast': 'pics/Shadowcast.png',
+    'Attunementless': 'pics/Attunementless.png',
+    'lightkeep': 'pics/Lightkeep.png', 
+    'ballplay': 'pics/Ballplay.png'    
+};
+
+const GEM_ICONS = {
+    'bloodless': 'pics/gem_bloodless.png', 
+    'wind': 'pics/gem_wind.png',           
+    'blue': 'pics/gem_blue.png',           
+    'insignia': 'pics/gem_insignia.png',   
+    'wayward': 'pics/gem_wayward.png',     
+    'blessed': 'pics/gem_blessed.png',     
+    'aegis': 'pics/gem_aegis.png'          
+};
+
+let mantraPendingGem = null;
+let selectedParchmentMantraId = null;
+let mrSelectedTextDisplay = 'X';
         const defaultDB = {
             kits: [
                 {id:'k1', name:'Standard Kit', image:'https://images.unsplash.com/photo-1614030424754-24d0eebd46b2?w=150', description:'Basic starter kit.'}
@@ -123,8 +149,6 @@ async function openDB() {
 
         if (res.ok) {
             currentSessionToken = pw; 
-            
-            // Note: If you added the $ helper, use $('db-modal'). Otherwise keep document.getElementById
             document.getElementById('db-modal').classList.add('active'); 
             
             setTimeout(() => {
@@ -134,7 +158,7 @@ async function openDB() {
         } else if (res.status === 401) {
             alert("Wrong Password! Access Denied.");
         } else {
-            // This will catch the 500 errors and tell you EXACTLY what you forgot to set up in Cloudflare
+            
             const errData = await res.json();
             alert("Cloudflare Server Error:\n\n" + errData.error);
         }
@@ -147,10 +171,7 @@ async function openDB() {
 }
 
      async function saveDB() {
-    // Always save to local browser first
     localStorage.setItem('deepfaken_db', JSON.stringify(db));
-    
-    // If you are logged in (you put a password in), send to Cloudflare
     if (currentSessionToken) {
         try {
             const res = await fetch(CLOUDFLARE_API, {
@@ -706,32 +727,37 @@ function toggleCorrupt() {
 //  SELECTION MODAL
 function openSelectionModal(type, forceTab = null) {
     currentSelectionType = type;
+    if (type === 'mantras') {
+        document.getElementById('standard-selection-body').classList.add('hidden');
+        document.getElementById('mantra-selection-body').classList.remove('hidden');
+        
+        const modalBody = document.querySelector('#selection-modal .modal-container');
+        modalBody.style.background = "#111"; 
+        
+        currentSelectionTab = forceTab || CATEGORIES.ATTUNEMENTS[0];
+        mantraPendingGem = null; 
+        mrSelectedTextDisplay = 'X';
+        renderMantraUI();
+        
+        document.getElementById('selection-modal').classList.add('active');
+        return;
+    }
+
+    document.getElementById('standard-selection-body').classList.remove('hidden');
+    document.getElementById('mantra-selection-body').classList.add('hidden');
     document.getElementById('modal-search').value = '';
 
     const tabsContainer = document.getElementById('modal-tabs');
     tabsContainer.innerHTML = '';
 
-  const modalBody = document.querySelector('#selection-modal .modal-body-split');
+    const modalBody = document.querySelector('#selection-modal .modal-body-split');
     
     switch(type) {
-        case 'bells':
-            modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-            break;
+        case 'bells': modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)"; break;
         case 'weapons':
-            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-            break;
         case 'oaths':
-            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-            break;
-        case 'kits':
-            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-            break;
-        case 'mantras':
-            modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-            break;
-        default:
-            modalBody.style.background = "rgba(15, 20, 25, 0.65)"; 
-            break;
+        case 'kits': modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)"; break;
+        default: modalBody.style.background = "rgba(15, 20, 25, 0.65)"; break;
     }
 
     if (type === 'weapons') {
@@ -749,21 +775,6 @@ function openSelectionModal(type, forceTab = null) {
             tabsContainer.appendChild(btn);
         });
         currentSelectionTab = forceTab || 'heavy';
-    } else if (type === 'mantras') {
-        tabsContainer.classList.remove('hidden');
-        CATEGORIES.ATTUNEMENTS.forEach((att, idx) => {
-            let btn = document.createElement('button');
-            btn.className = `tab-btn ${idx === 0 ? 'active' : ''}`;
-            btn.innerText = att;
-            btn.onclick = () => {
-                document.querySelectorAll('#modal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentSelectionTab = att;
-                renderSelectionGrid();
-            };
-            tabsContainer.appendChild(btn);
-        });
-        currentSelectionTab = forceTab || CATEGORIES.ATTUNEMENTS[0];
     } else {
         tabsContainer.classList.add('hidden');
         currentSelectionTab = null;
@@ -792,24 +803,25 @@ function renderSelectionGrid() {
     const tracker = document.getElementById('modal-mantra-tracker');
     if (currentSelectionType === 'mantras') {
         tracker.style.display = 'block';
+        tracker.className = 'selected-mantra-container'; 
+        
         const normalCount = currentBuild.mantras.filter(m => !m.mantra.isBonus).length;
         const hasBonus = currentBuild.mantras.some(m => m.mantra.isBonus);
         
-        let trackerHtml = `<div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">SELECTED MANTRAS (${normalCount}/2) ${hasBonus ? '+ 1 Bonus' : ''}</div><div style="display:flex; gap:10px; flex-wrap:wrap;">`;
+        let trackerHtml = `<div class="selected-mantra-header">SELECTED MANTRAS (${normalCount}/2) ${hasBonus ? '+ 1 Bonus' : ''}</div><div class="selected-mantra-box">`;
         
         currentBuild.mantras.forEach(m => {
             const isBonus = m.mantra.isBonus;
-            const bg = isBonus ? 'rgba(255, 215, 0, 0.2)' : 'var(--primary)';
-            const border = isBonus ? '1px solid gold' : 'none';
-            const color = isBonus ? 'gold' : '#000';
-            const label = m.mantra.name + (isBonus ? ' (Bonus)' : '');
-            
-            trackerHtml += `<div style="background:${bg}; background-color: white; border:white; color:Black; padding:4px 10px; border-radius:6px; font-size:0.85rem; font-weight:bold;">${label}</div>`;
+            const bg = isBonus ? 'rgba(255, 215, 0, 0.2)' : 'rgba(0, 240, 255, 0.2)';
+            const border = isBonus ? '1px solid gold' : '1px solid var(--primary)';
+            const label = m.mantra.name + (isBonus ? ' (Bonus)' : '') + (m.gem ? ` [${m.gem}]` : '');
+            trackerHtml += `<div class="equipped-mantra-btn" style="background:${bg}; border:${border};" onclick="viewEquippedMantra('${m.mantra.id}')">${label}</div>`;
         });
         trackerHtml += `</div>`;
         tracker.innerHTML = trackerHtml;
     } else {
         tracker.style.display = 'none';
+        tracker.className = '';
     }
     
     items.forEach(item => {
@@ -850,26 +862,7 @@ function showDetails(item) {
         .replace(/\[(.*?)\]/g, '<img src="$1" style="max-width:100%; border-radius:8px; display:block; margin:10px 0;">');
 
     let gemHtml = '';
-    if (currentSelectionType === 'mantras') {
-        const equippedMantra = currentBuild.mantras.find(m => m.mantra.id === item.id);
-        if (equippedMantra) {
-            const gemButtons = GEMS.map(g => {
-                const isActive = equippedMantra.gem === g;
-                return `<button onclick="setMantraGem('${item.id}', '${g}')" style="padding: 6px 12px; border-radius: 6px; background: ${isActive ? 'var(--primary)' : 'rgba(0,0,0,0.5)'}; color: ${isActive ? '#000' : '#fff'}; border: 1px solid var(--primary); font-weight: bold; cursor: pointer; transition: 0.2s;">${g}</button>`;
-            }).join('');
-            
-            gemHtml = `
-                <div style="margin-top: 20px; padding: 15px; background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.3); border-radius: 12px;">
-                    <div style="color: var(--primary); margin-bottom: 10px; font-weight: bold; text-transform: uppercase; font-size: 0.85rem;">Equip Gem</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        ${gemButtons}
-                        <button onclick="setMantraGem('${item.id}', null)" style="padding: 6px 12px; border-radius: 6px; background: rgba(255,71,87,0.2); color: var(--danger); border: 1px solid var(--danger); font-weight: bold; cursor: pointer;">Clear Gem</button>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
+    
     document.getElementById('detail-content').innerHTML = `
         <img class="detail-img" src="${item.image || 'pics/question.png'}">
         <div class="detail-name">${item.name}</div>
@@ -905,7 +898,7 @@ function selectItem(item, isCorrupted = false) {
             // REMOVING a mantra
             currentBuild.mantras.splice(existingIdx, 1);
             
-            // Check if we just invalidated the Bonus Mantra by removing a required regular mantra
+            
             const remainingRegulars = currentBuild.mantras.filter(m => !m.mantra.isBonus);
             const bonusIdx = currentBuild.mantras.findIndex(m => m.mantra.isBonus);
             
@@ -918,12 +911,12 @@ function selectItem(item, isCorrupted = false) {
                 }
             }
         } else {
-            // ADDING a mantra
+            
             const normalCount = currentBuild.mantras.filter(m => !m.mantra.isBonus).length;
             const bonusCount = currentBuild.mantras.filter(m => m.mantra.isBonus).length;
 
             if (item.isBonus) {
-                // Rule: Must have 2 regular mantras of THIS item's attunement
+          
                 const matchingReqs = currentBuild.mantras.filter(m => !m.mantra.isBonus && m.mantra._att === currentSelectionTab).length;
                 
                 if (bonusCount >= 1) {
@@ -931,7 +924,7 @@ function selectItem(item, isCorrupted = false) {
                 } else if (matchingReqs < 2) {
                     alert(`You need 2 regular ${currentSelectionTab} mantras equipped first to select this bonus mantra!`);
                 } else {
-                    // Success! Bypass normal cap.
+                
                     currentBuild.mantras.push({ mantra: {...item, _att: currentSelectionTab}, gem: null });
                 }
             } else {
@@ -945,100 +938,254 @@ function selectItem(item, isCorrupted = false) {
     }
     
     renderSidebar();
-    renderSelectionGrid(); 
+    if (currentSelectionType === 'mantras') {
+        renderMantraUI();
+    } else {
+        renderSelectionGrid();
+    }
 }
 
 function setMantraGem(mantraId, gemName) {
     const mIndex = currentBuild.mantras.findIndex(m => m.mantra.id === mantraId);
     if (mIndex > -1) {
         currentBuild.mantras[mIndex].gem = gemName;
-        renderSidebar(); // Update the sidebar visually
-        showDetails(currentBuild.mantras[mIndex].mantra);
+        renderSidebar(); 
+        if (currentSelectionType === 'mantras') {
+        renderMantraUI();
+    } else {
+        renderSelectionGrid();
+    }
+        viewEquippedMantra(mantraId); 
     }
 }
 
  
 
 // CONTEXT MENU FOR MANTRAS
-        function openMantraContextMenu(e, index) {
-            e.stopPropagation();
-            const ctx = document.getElementById('context-menu');
-            ctx.innerHTML = '';
-            
-            let removeBtn = document.createElement('div');
-            removeBtn.className = 'ctx-item ctx-danger';
-            removeBtn.innerText = 'Remove Mantra';
-            removeBtn.onclick = () => {
-                currentBuild.mantras.splice(index, 1);
-                
-                // Validate Bonus Mantra requirement
-                const remainingRegulars = currentBuild.mantras.filter(m => !m.mantra.isBonus);
-                const bonusIdx = currentBuild.mantras.findIndex(m => m.mantra.isBonus);
-                
-                if (bonusIdx > -1) {
-                    const bonusAtt = currentBuild.mantras[bonusIdx].mantra._att;
-                    const matchingReqs = remainingRegulars.filter(m => m.mantra._att === bonusAtt).length;
-                    if (matchingReqs < 2) {
-                        currentBuild.mantras.splice(bonusIdx, 1);
-                        alert("Bonus mantra automatically unequipped because you no longer have 2 regular mantras of its attunement.");
-                    }
-                }
-                
-                renderSidebar();
-                renderSelectionGrid();
-                closeCtx();
-            };
+function renderMantraUI() {
+    const container = document.getElementById('mantra-selection-body');
+    let topIconsHTML = `<div class="mr-top-grid">`;
+    
 
-            ctx.appendChild(removeBtn);
+    const displayOrder = ['Lifeweave', 'Ironsing', 'Attunementless', 'Flamecharm', 'Thundercall', 'Galebreathe', 'Frostdraw', 'Shadowcast', 'ballplay', 'lightkeep'];
+    
+    displayOrder.forEach(att => {
+        const isActive = currentSelectionTab === att ? 'mr-active-att' : '';
+        const imgSrc = ATTUNEMENT_ICONS[att] || 'pics/question.png';
+        topIconsHTML += `
+            <div class="mr-att-slot ${isActive}" onclick="switchMantraAttunement('${att}')">
+                <img src="${imgSrc}">
+            </div>`;
+    });
+    topIconsHTML += `</div>`;
 
-            let hr = document.createElement('div');
-            hr.style.height = '1px'; hr.style.background = 'rgba(255,255,255,0.1)'; hr.style.margin = '5px 0';
-            ctx.appendChild(hr);
+    let equippedHTML = '';
+    currentBuild.mantras.forEach(m => {
+        const isPending = mantraPendingGem === m.mantra.id ? 'mr-pending' : '';
+        equippedHTML += `
+            <div class="mr-equipped-item ${isPending}" onclick="setPendingGemMantra('${m.mantra.id}')">
+                <img src="${m.mantra.image || 'pics/question.png'}">
+                <div class="mr-eq-label">${m.mantra.name}</div>
+                ${m.gem ? `<div class="mr-eq-gem">${m.gem}</div>` : ''}
+            </div>
+        `;
+    });
 
-            let gemHeader = document.createElement('div');
-            gemHeader.style.padding = '5px 15px'; gemHeader.style.color = '#888'; gemHeader.style.fontSize = '0.75rem'; gemHeader.style.textTransform = 'uppercase';
-            gemHeader.innerText = 'Equip Gem:';
-            ctx.appendChild(gemHeader);
+   
+    let listHTML = `<div class="mr-parchment-panel">`;
+    let availableMantras = db.mantras[currentSelectionTab] || [];
+    availableMantras.forEach(m => {
+        const isSelected = selectedParchmentMantraId === m.id;
+        const selClass = isSelected ? 'mr-selected-text' : ''; 
+        listHTML += `<div class="mr-parchment-item ${selClass}" onclick="handleParchmentClick('${m.id}')">${m.name}</div>`;
+    });
+    listHTML += `</div>`;
 
-            GEMS.forEach(gem => {
-                let btn = document.createElement('div');
-                btn.className = 'ctx-item';
-                btn.innerText = gem;
-                btn.onclick = () => {
-                    currentBuild.mantras[index].gem = gem;
-                    renderSidebar();
-                    closeCtx();
-                };
-                ctx.appendChild(btn);
-            });
+    let gemsHTML = `<div class="mr-gem-row">`;
+    GEMS.forEach(g => {
+        const imgSrc = GEM_ICONS[g] || 'pics/question.png';
+        gemsHTML += `<img src="${imgSrc}" class="mr-gem-icon" onclick="applyGemToPending('${g}')" title="${g}">`;
+    });
+    gemsHTML += `
+        <div class="mr-gem-none" onclick="applyGemToPending(null)">
+            <span style="color:black; font-weight:900; font-size:1.4rem;">NONE</span>
+        </div>
+    </div>`;
+    
+    container.innerHTML = `
+        ${topIconsHTML}
+        
+        <div class="mr-red-box">
+            <div class="mr-red-title">← look here bro</div>
+            <div class="mr-red-content">${equippedHTML}</div>
+        </div>
 
-            if (currentBuild.mantras[index].gem) {
-                let noGem = document.createElement('div');
-                noGem.className = 'ctx-item ctx-danger';
-                noGem.style.marginTop = '5px';
-                noGem.innerText = 'Unequip Gem';
-                noGem.onclick = () => {
-                    currentBuild.mantras[index].gem = null;
-                    renderSidebar();
-                    closeCtx();
-                };
-                ctx.appendChild(noGem);
-            }
+        ${listHTML}
+        ${gemsHTML}
 
-            ctx.style.display = 'block';
-            
-            // Adjust position to not go off-screen
-            let x = e.clientX;
-            let y = e.clientY;
-            if (x + 200 > window.innerWidth) x -= 200;
-            if (y + 300 > window.innerHeight) y -= 300;
-            
-            ctx.style.left = x + 'px';
-            ctx.style.top = y + 'px';
+        <div class="mr-bottom-info">
+            Selected Attunement:<br>
+            <span style="color:#ddd;">${currentSelectionTab}</span><br>
+            Selected: <span style="color:#ddd;">${mrSelectedTextDisplay}</span>
+        </div>
+
+        <!-- Equip Buttons moved under the list panel -->
+        <div class="mr-equip-controls">
+            <div class="mr-equip-btn" onclick="togglePrimary()" style="font-size: 2.2rem; color: white;">Equip Primary</div>
+            <div class="mr-equip-btn" onclick="toggleSecondary()" style="font-size: 1.2rem; color:#ccc;">Equip Secondary</div>
+            <div class="mr-equip-btn" onclick="toggleTertiary()" style="font-size: 0.85rem; color:#aaa;">Equip Tertiary (2+ of same attunement)</div>
+        </div>
+    `;
+}
+
+function switchMantraAttunement(att) {
+    currentSelectionTab = att;
+    selectedParchmentMantraId = null; 
+    mrSelectedTextDisplay = 'X';
+    renderMantraUI();
+}
+
+function handleParchmentClick(id) {
+    selectedParchmentMantraId = id; 
+    let item = db.mantras[currentSelectionTab].find(m => m.id === id);
+    if (item) mrSelectedTextDisplay = item.name;
+    renderMantraUI();
+}
+
+function setPendingGemMantra(id) {
+    mantraPendingGem = id;
+    let m = currentBuild.mantras.find(x => x.mantra.id === id);
+    if (m) mrSelectedTextDisplay = m.mantra.name;
+    renderMantraUI();
+}
+
+function applyGemToPending(gem) {
+    if (!mantraPendingGem) return alert("Click a mantra inside the red 'Selected' box first to apply a gem!");
+     mrSelectedTextDisplay = gem ? gem : 'NONE';
+    setMantraGem(mantraPendingGem, gem);
+}
+
+
+
+function togglePrimary() {
+    if (!selectedParchmentMantraId) return alert("Click a mantra from the right list first!");
+    let item = db.mantras[currentSelectionTab].find(m => m.id === selectedParchmentMantraId);
+    if (item.isBonus) return alert("Select a regular mantra for the Primary slot.");
+
+    let regs = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+    let bonus = currentBuild.mantras.filter(m => m.mantra.isBonus);
+
+    if (regs[0] && regs[0].mantra.id === item.id) {
+        regs.shift(); 
+    } else {
+  
+        regs = regs.filter(m => m.mantra.id !== item.id);
+
+        regs.unshift({ mantra: {...item, _att: currentSelectionTab}, gem: null });
+        if (regs.length > 2) regs = regs.slice(0, 2); 
+    }
+
+    currentBuild.mantras = [...regs, ...bonus];
+    checkAutoBonus();
+    renderMantraUI();
+    renderSidebar();
+}
+
+function toggleSecondary() {
+    if (!selectedParchmentMantraId) return alert("Click a mantra from the right list first!");
+    let item = db.mantras[currentSelectionTab].find(m => m.id === selectedParchmentMantraId);
+    if (item.isBonus) return alert("Select a regular mantra for the Secondary slot.");
+
+    let regs = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+    let bonus = currentBuild.mantras.filter(m => m.mantra.isBonus);
+
+    if (regs.length === 0) return alert("Equip a Primary mantra first!");
+    if (regs[1] && regs[1].mantra.id === item.id) {
+        regs.splice(1, 1);
+    } else {
+
+        regs = regs.filter(m => m.mantra.id !== item.id);
+        if (regs.length === 0) return alert("Equip a Primary mantra first!");
+        regs[1] = { mantra: {...item, _att: currentSelectionTab}, gem: null };
+    }
+
+    currentBuild.mantras = [...regs, ...bonus];
+    checkAutoBonus();
+    renderMantraUI();
+    renderSidebar();
+}
+
+function toggleTertiary() {
+    let regs = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+    if (regs.length < 2 || regs[0].mantra._att !== regs[1].mantra._att) {
+        return alert("You need 2 mantras of the same attunement to use Tertiary mantras!");
+    }
+    
+    let sharedAtt = regs[0].mantra._att;
+    let bonusData = db.mantras[sharedAtt]?.find(m => m.isBonus);
+    if (!bonusData) return alert("No bonus mantra exists yet for this attunement.");
+
+    let hasBonus = currentBuild.mantras.some(m => m.mantra.isBonus);
+    
+    if (hasBonus) { 
+        currentBuild.mantras = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+    } else { 
+        currentBuild.mantras.push({ mantra: {...bonusData, _att: sharedAtt}, gem: null });
+    }
+    
+    renderMantraUI();
+    renderSidebar();
+}
+
+function checkAutoBonus() {
+    let regs = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+    let hasBonus = currentBuild.mantras.some(m => m.mantra.isBonus);
+    if (regs.length < 2 || regs[0].mantra._att !== regs[1].mantra._att) {
+        currentBuild.mantras = currentBuild.mantras.filter(m => !m.mantra.isBonus);
+        return;
+    }
+    if (regs.length === 2 && regs[0].mantra._att === regs[1].mantra._att) {
+        let sharedAtt = regs[0].mantra._att;
+        let bonusData = db.mantras[sharedAtt]?.find(m => m.isBonus);
+        
+        if (bonusData && !hasBonus) {
+            currentBuild.mantras.push({ mantra: {...bonusData, _att: sharedAtt}, gem: null });
         }
+    }
+}
 
         function closeCtx() { document.getElementById('context-menu').style.display = 'none'; }
         
+        function viewEquippedMantra(mantraId) {
+    const equippedMantra = currentBuild.mantras.find(m => m.mantra.id === mantraId);
+    if (!equippedMantra) return;
+    
+    const item = equippedMantra.mantra;
+    const gemButtons = GEMS.map(g => {
+        const isActive = equippedMantra.gem === g;
+        const imgSrc = GEM_ICONS[g] || 'pics/question.png'; 
+        return `
+            <div class="gem-select-btn ${isActive ? 'active' : ''}" onclick="setMantraGem('${item.id}', '${g}')" title="${g}">
+                <img src="${imgSrc}" alt="${g}">
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('detail-content').innerHTML = `
+        <div class="detail-name" style="color:var(--primary)">Modifying: ${item.name}</div>
+        <div style="font-size: 1.1rem; color: #aaa; margin-bottom: 20px;">Select a gem below to equip it to this mantra.</div>
+        
+        <div class="gem-selection-area">
+            <div class="gem-grid">
+                ${gemButtons}
+                <!-- The "None/X" button -->
+                <div class="gem-select-btn no-gem" onclick="setMantraGem('${item.id}', null)" title="Remove Gem">
+                    <span style="color:red; font-weight:bold; font-size:2rem;">X</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
 // BUILD ACTIONS (Share, Clear, Random)
     function pickRandom(arr) { return (!arr || arr.length === 0) ? null : arr[Math.floor(Math.random() * arr.length)]; }
