@@ -1231,6 +1231,9 @@ function checkAutoBonus() {
     currentBuild.bellCorrupted = Math.random() > 0.5;
     
     const validWeaponCats = ['heavy', 'medium', 'light'].filter(cat => db.weapons[cat] && db.weapons[cat].length > 0);
+    const allAtts = CATEGORIES.ATTUNEMENTS;
+    let chosenRegulars = [];
+    currentBuild.mantras = []; 
 
     if (validWeaponCats.length > 0) {
         const randomWeaponCat = pickRandom(validWeaponCats);
