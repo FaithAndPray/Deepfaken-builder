@@ -19,6 +19,14 @@
     'ballplay': 'pics/Ballplay.png'    
 };
 
+const BELL_PAGES = [
+    { title: "common bells (50% chance)", id: "common" },
+    { title: "rare bells (34% chance)", id: "rare" },
+    { title: "legendary bells (10% chance)", id: "legendary" },
+    { title: "mythic bells (3% chance)", id: "mythic" },
+    { title: "pain bells (0.1% chance)", id: "pain" }
+];
+
 const GEM_ICONS = {
     'bloodless': 'pics/gem_bloodless.png', 
     'wind': 'pics/gem_wind.png',           
@@ -29,9 +37,7 @@ const GEM_ICONS = {
     'aegis': 'pics/gem_aegis.png'          
 };
 
-let mantraPendingGem = null;
-let selectedParchmentMantraId = null;
-let mrSelectedTextDisplay = 'X';
+
         const defaultDB = {
             kits: [
                 {id:'k1', name:'Standard Kit', image:'https://images.unsplash.com/photo-1614030424754-24d0eebd46b2?w=150', description:'Basic starter kit.'}
@@ -70,7 +76,9 @@ let mrSelectedTextDisplay = 'X';
         if (!db.weapons.enchants) { db.weapons.enchants = []; saveDB(); }
 
         let currentBuild = { kit: null, oath: null, weapon: null, enchant: null, bell: null, bellCorrupted: false, mantras: [], notes: "", bonusMantraGem: null };
-        
+        let mantraPendingGem = null;
+        let selectedParchmentMantraId = null;
+        let mrSelectedTextDisplay = 'X';
         let currentSelectionType = null;
         let currentSelectionTab = null;
         let previewedItem = null;
@@ -79,7 +87,9 @@ let mrSelectedTextDisplay = 'X';
         let editingItemId = null;
         let editingItemType = null;
         let currentSessionToken = null;
-        
+        let currentBellPageIndex = 0;
+        let previewedBellCorrupt = false;
+
     // on page loads
 
        window.onload = async () => {
@@ -314,6 +324,10 @@ function addExtraBuffRow(buff = {name:'', hp:0, posture:0, dmgBuff:0, dmgResis:0
             <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">Resis %</label><input type="number" class="eb-dmgResis" value="${buff.dmgResis || 0}" style="margin-top:4px;"></div>
             <div style="flex: 1; min-width: 70px;"><label style="font-size: 0.7rem; color:#aaa; text-transform:uppercase;">Speed %</label><input type="number" class="eb-speedBuff" value="${buff.speedBuff || 0}" style="margin-top:4px;"></div>
         </div>
+        <label style="cursor:pointer; display:flex; align-items:center; gap:5px; margin-top:10px; color:#aaa; font-size:0.8rem;">
+            <input type="checkbox" class="eb-defaultDisabled" ${buff.defaultDisabled ? 'checked' : ''} style="width:auto; margin:0;">
+            Disable this buff by default
+        </label>
     `;
     container.appendChild(row);
 }
@@ -351,6 +365,9 @@ function openDbForm(type = currentDbTab, id = null) {
     document.getElementById('db-form-nonenchantable').checked = item?.isNonEnchantable || false;
     document.getElementById('db-form-isbonus').checked = item?.isBonus || false;
     document.getElementById('db-form-cancorrupt').checked = item?.canCorrupt || false;
+    document.getElementById('db-form-default-disabled').checked = item?.defaultDisabled || false;
+    document.getElementById('db-form-corrupt-desc').value = item?.corruptDesc || '';
+    document.getElementById('db-form-bell-rarity').value = item?.rarity || 'common';
 
     const catContainer = document.getElementById('db-form-cat-container');
     const catSelect = document.getElementById('db-form-cat');
@@ -391,7 +408,8 @@ function openDbForm(type = currentDbTab, id = null) {
         posture: parseFloat(row.querySelector('.eb-posture').value) || 0,
         dmgBuff: parseFloat(row.querySelector('.eb-dmgBuff').value) || 0,
         dmgResis: parseFloat(row.querySelector('.eb-dmgResis').value) || 0,
-        speedBuff: parseFloat(row.querySelector('.eb-speedBuff').value) || 0
+        speedBuff: parseFloat(row.querySelector('.eb-speedBuff').value) || 0,
+        defaultDisabled: row.querySelector('.eb-defaultDisabled').checked
     })).filter(b => b.name !== "");
 
     const item = {
@@ -408,7 +426,10 @@ function openDbForm(type = currentDbTab, id = null) {
         m1Dmg: parseFloat(document.getElementById('db-form-m1dmg').value) || 0,
         isBonus: document.getElementById('db-form-isbonus').checked,
         canCorrupt: document.getElementById('db-form-cancorrupt').checked,
-        isNonEnchantable: document.getElementById('db-form-nonenchantable').checked
+        isNonEnchantable: document.getElementById('db-form-nonenchantable').checked,
+        defaultDisabled: document.getElementById('db-form-default-disabled').checked,
+        corruptDesc: document.getElementById('db-form-corrupt-desc').value.trim(),
+        rarity: document.getElementById('db-form-bell-rarity').value
     };
     
     const cat = document.getElementById('db-form-cat').value;
@@ -456,13 +477,15 @@ function calculateStats() {
     ];
 
     const applyStats = (i, slotId) => {
-        if (!currentBuild.disabledBuffs[slotId]) {
+        const baseDisabled = currentBuild.disabledBuffs[slotId] !== undefined ? currentBuild.disabledBuffs[slotId] : i.defaultDisabled;
+        if (!baseDisabled) {
             totalHp += (i.hp || 0); posture += (i.posture || 0);
             rawDmgBuffs += (i.dmgBuff || 0); dmgResis += (i.dmgResis || 0); speedBuffs += (i.speedBuff || 0);
         }
         if (i.extraBuffs) {
             i.extraBuffs.forEach((b, idx) => {
-                if (!currentBuild.disabledBuffs[`${slotId}_eb_${idx}`]) {
+                const ebDisabled = currentBuild.disabledBuffs[`${slotId}_eb_${idx}`] !== undefined ? currentBuild.disabledBuffs[`${slotId}_eb_${idx}`] : b.defaultDisabled;
+                if (!ebDisabled) {
                     totalHp += (b.hp || 0); posture += (b.posture || 0);
                     rawDmgBuffs += (b.dmgBuff || 0); dmgResis += (b.dmgResis || 0); speedBuffs += (b.speedBuff || 0);
                 }
@@ -554,13 +577,13 @@ function openStatsModal() {
         if (i.dmgResis) statsArr.push(`Resis: ${i.dmgResis > 0 ? '+'+i.dmgResis : i.dmgResis}%`);
         if (i.speedBuff) statsArr.push(`Speed: ${i.speedBuff > 0 ? '+'+i.speedBuff : i.speedBuff}%`);
 
-        const isChecked = !currentBuild.disabledBuffs[entry.id];
+        const isChecked = currentBuild.disabledBuffs[entry.id] !== undefined ? !currentBuild.disabledBuffs[entry.id] : !i.defaultDisabled;
 
         let extraBuffsHtml = '';
         if (i.extraBuffs && i.extraBuffs.length > 0) {
             i.extraBuffs.forEach((b, ebIdx) => {
                 const ebId = `${entry.id}_eb_${ebIdx}`;
-                const ebChecked = !currentBuild.disabledBuffs[ebId];
+                const ebChecked = currentBuild.disabledBuffs[ebId] !== undefined ? !currentBuild.disabledBuffs[ebId] : !b.defaultDisabled;
                 
                 let ebStats = [];
                 if (b.hp) ebStats.push(`HP: ${b.hp > 0 ? '+'+b.hp : b.hp}`);
@@ -678,15 +701,10 @@ renderSlot('sidebar-kit', currentBuild.kit);
         const corruptClass = currentBuild.bellCorrupted ? 'corrupted-text' : '';
         const corruptSuffix = currentBuild.bellCorrupted ? ' (Corrupted)' : '';
 
-        const corruptBtnHTML = b.canCorrupt 
-            ? `<button onclick="event.stopPropagation(); toggleCorrupt()" style="padding: 4px 6px; background: rgba(255,71,87,0.2); color: #ff4757; border: 1px solid #ff4757; border-radius: 6px; font-weight:bold; font-size: 0.65rem; cursor: pointer;">CORRUPT</button>` 
-            : ``;
-
         bContainer.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; width:100%;">
                 <img src="${imgSrc}" class="slot-image">
                 <div class="slot-text ${corruptClass}" style="flex:1;">${b.name}${corruptSuffix}</div>
-                ${corruptBtnHTML}
             </div>
         `;
     }
@@ -731,7 +749,10 @@ function openSelectionModal(type, forceTab = null) {
     document.getElementById('standard-selection-body').classList.add('hidden');
     document.getElementById('mantra-selection-body').classList.add('hidden');
     document.getElementById('kit-selection-body').classList.add('hidden');
-    document.getElementById('oath-selection-body').classList.add('hidden'); // Hide new body
+    document.getElementById('oath-selection-body').classList.add('hidden'); 
+    if (document.getElementById('bell-selection-body')) {
+        document.getElementById('bell-selection-body').classList.add('hidden');
+    }
     
     const modalBody = document.querySelector('#selection-modal .modal-container');
     modalBody.style.background = "transparent";
@@ -752,18 +773,19 @@ function openSelectionModal(type, forceTab = null) {
         document.getElementById('oath-selection-body').classList.remove('hidden');
         previewedItem = currentBuild.oath || null;
         renderOathUI();
-    } else { // Standard view for weapons, bells, etc.
+    } else if (type === 'bells') {
+        document.getElementById('bell-selection-body').classList.remove('hidden');
+        previewedItem = currentBuild.bell || null;
+        previewedBellCorrupt = currentBuild.bellCorrupted || false;
+        renderBellUI();
+    } else { // Standard view for weapons, etc.
         document.getElementById('standard-selection-body').classList.remove('hidden');
         document.getElementById('modal-search').value = '';
 
         const tabsContainer = document.getElementById('modal-tabs');
         tabsContainer.innerHTML = '';
 
-        if (type === 'bells') {
-            modalBody.style.background = "url('pics/bell-meau-background.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-        } else {
-             modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
-        }
+        modalBody.style.background = "url('pics/meaubg.png') center/cover no-repeat, rgba(0,0,0,0.5)";
 
         if (type === 'weapons') {
             tabsContainer.classList.remove('hidden');
@@ -883,6 +905,71 @@ function equipKit(id) {
             document.getElementById('selection-modal').classList.remove('active');
         }
 
+    function changeBellPage(dir) {
+    currentBellPageIndex += dir;
+    if (currentBellPageIndex < 0) currentBellPageIndex = BELL_PAGES.length - 1;
+    if (currentBellPageIndex >= BELL_PAGES.length) currentBellPageIndex = 0;
+    renderBellUI();
+}
+
+function renderBellUI() {
+    const pageData = BELL_PAGES[currentBellPageIndex];
+    document.getElementById('bell-page-title').innerText = pageData.title;
+    
+    const grid = document.getElementById('bell-grid');
+    grid.innerHTML = '';
+    
+    const pageItems = (db.bells || []).filter(b => (b.rarity || 'common') === pageData.id);
+
+    pageItems.forEach(item => {
+        let card = document.createElement('div');
+        card.className = 'bell-item';
+        card.innerHTML = `<img src="${item.image || 'pics/question.png'}">`;
+        card.onclick = () => {
+            previewedItem = item;
+            previewedBellCorrupt = false;
+            renderBellUI();
+        };
+        grid.appendChild(card);
+    });
+
+    if (previewedItem) {
+        let descText = previewedItem.description || 'No description provided.';
+        if (previewedBellCorrupt && previewedItem.corruptDesc) {
+            descText = previewedItem.corruptDesc;
+        }
+        document.getElementById('bell-desc-text').innerText = descText;
+        const corruptSuffix = previewedBellCorrupt ? ' [CORRUPTED]' : '';
+        document.getElementById('bell-selected-text').innerText = `selected: ${previewedItem.name}${corruptSuffix}`;
+    } else {
+        document.getElementById('bell-desc-text').innerText = 'bell description here';
+        document.getElementById('bell-selected-text').innerText = 'selected: X';
+    }
+
+    const corruptBtn = document.getElementById('bell-corrupt-btn');
+    if (previewedItem && previewedItem.canCorrupt) {
+        corruptBtn.style.opacity = '1';
+        corruptBtn.style.pointerEvents = 'auto';
+    } else {
+        corruptBtn.style.opacity = '0.3';
+        corruptBtn.style.pointerEvents = 'none';
+        previewedBellCorrupt = false;
+    }
+}
+
+function toggleBellCorruptUI() {
+    if (!previewedItem || !previewedItem.canCorrupt) return;
+    previewedBellCorrupt = !previewedBellCorrupt;
+    renderBellUI();
+}
+
+function equipBellUI() {
+    if (!previewedItem) return alert('Select a bell first!');
+    currentBuild.bell = previewedItem;
+    currentBuild.bellCorrupted = previewedBellCorrupt;
+    renderSidebar();
+    closeSelectionModal();
+}
 function renderSelectionGrid() {
     const grid = document.getElementById('item-grid');
     grid.innerHTML = '';

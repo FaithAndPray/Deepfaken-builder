@@ -132,6 +132,26 @@
         <div id="mantra-selection-body" class="hidden mantra-rework-wrapper">
             <!-- Rendered completely by Javascript -->
         </div>
+
+        <!-- BELL VIEW -->
+        <div id="bell-selection-body" class="hidden bell-rework-wrapper">
+    <div class="bell-header-box" id="bell-page-title">common bells (50% chance)</div>
+    
+    <div class="bell-middle-section">
+        <div class="bell-arrow" onclick="changeBellPage(-1)">&lt;</div>
+        <div id="bell-grid" class="bell-grid"></div>
+        <div class="bell-arrow" onclick="changeBellPage(1)">&gt;</div>
+    </div>
+
+    <div class="bell-bottom-section">
+        <div class="bell-desc-box" id="bell-desc-text">bell description here</div>
+        <div class="bell-action-box">
+            <div class="bell-corrupt-btn" id="bell-corrupt-btn" onclick="toggleBellCorruptUI()">corrupt bell</div>
+            <div class="bell-selected-text" id="bell-selected-text">selected: X</div>
+            <div class="bell-equip-btn" onclick="equipBellUI()">select bell</div>
+        </div>
+    </div>
+</div>
         <!-- KIT VIEW -->
         <div id="kit-selection-body" class="hidden kit-rework-wrapper">
             <div class="kit-left-list" id="kit-list-container"></div>
@@ -236,9 +256,27 @@
         <label>Is this a Bonus Mantra?</label>
     </div>
 
-    <div class="form-group" id="db-form-bell-container" style="display:none; flex-direction: row; align-items: center; gap: 10px;">
-        <input type="checkbox" id="db-form-cancorrupt" style="width: auto;">
-        <label>Can be corrupted?</label>
+    <div class="form-group" style="display: flex; flex-direction: row; align-items: center; gap: 10px; margin-top: 10px;">
+        <input type="checkbox" id="db-form-default-disabled" style="width: auto;">
+        <label>Disable base buffs by default? (Forces user to manually enable them in stats)</label>
+    </div>
+
+    <!-- Bell Container -->
+    <div class="form-group" id="db-form-bell-container" style="display:none; flex-direction: column; gap: 10px; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 10px;">
+            <input type="checkbox" id="db-form-cancorrupt" style="width: auto;">
+            <label>Can be corrupted?</label>
+        </div>
+        <label>Corrupted Description</label>
+        <textarea id="db-form-corrupt-desc" rows="3" placeholder="Description when corrupted..."></textarea>
+        <label>Bell Rarity</label>
+        <select id="db-form-bell-rarity">
+            <option value="common">Common</option>
+            <option value="rare">Rare</option>
+            <option value="legendary">Legendary</option>
+            <option value="mythic">Mythic</option>
+            <option value="pain">Pain</option>
+        </select>
     </div>
 
     <div class="form-actions">
